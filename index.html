@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>19x19</title>
+    <style>
+        body {
+            background-color: #f5d97a; /* couleur plateau de go */
+            color: #111;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        h1 {
+            margin-top: 2rem;
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        h2 {
+            margin-top: 1rem;
+            font-size: 1.5rem;
+            font-weight: normal;
+        }
+
+        a {
+            margin-top: 2rem;
+            font-size: 1.2rem;
+            color: #111;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="main-title">19x19</h1>
+    <h2 id="subtitle">Site internet de la chaîne Youtube @goban19x19.</h2>
+    <a id="youtube-link" href="https://www.youtube.com/@goban19x19" target="_blank" rel="noopener">
+        Aller sur la chaîne Youtube
+    </a>
+    <script>
+        // Traductions disponibles
+        const translations = {
+            fr: {
+                title: "19x19",
+                subtitle: "Site internet de la chaîne Youtube @goban19x19.",
+                link: "Aller sur la chaîne Youtube"
+            },
+            en: {
+                title: "19x19",
+                subtitle: "Website of the Youtube channel @goban19x19.",
+                link: "Go to the Youtube channel"
+            },
+            de: {
+                title: "19x19",
+                subtitle: "Webseite des Youtube-Kanals @goban19x19.",
+                link: "Zur Youtube-Kanal gehen"
+            }
+        };
+
+        // Langues supportées
+        const supportedLangs = ["fr", "en", "de"];
+
+        // Détection de la langue du navigateur
+        function detectLang() {
+            const navLang = navigator.language || navigator.userLanguage || "fr";
+            const langCode = navLang.slice(0,2).toLowerCase();
+            return supportedLangs.includes(langCode) ? langCode : "fr";
+        }
+
+        // Application des traductions
+        function applyTranslations() {
+            const lang = detectLang();
+            const t = translations[lang];
+            document.documentElement.lang = lang;
+            document.getElementById("main-title").textContent = t.title;
+            document.getElementById("subtitle").textContent = t.subtitle;
+            document.getElementById("youtube-link").textContent = t.link;
+        }
+
+        applyTranslations();
+    </script>
+</body>
+</html>
