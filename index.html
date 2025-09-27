@@ -3,12 +3,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>19x19</title>
-    <!-- Favicons -->
+    <title>19x19</title> <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="ressources/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="ressources/favicon-16.png" />
     <link rel="apple-touch-icon" href="ressources/apple-touch-icon.png" />
-
     <style>
         :root {
             --max-page-width: 1200px;
@@ -76,7 +74,7 @@
             font-weight: 700;
         }
 
-        /* Subtitle plus grand ; contiendra un lien cliquable vers @handle */
+        /* Subtitle plus grand ; contiendra un lien cliquable vers le handle configuré */
         #subtitle {
             margin: 0;
             font-size: 1.55rem;
@@ -84,18 +82,84 @@
             max-width: 880px;
         }
 
-        /* Langues dispo */
+        /* Bloc des 8 lignes (br0–br7) */
+        #br-block {
+            margin: 0.75rem 0 0.25rem;
+            display: grid;
+            gap: 0.35rem;
+            font-size: 1.05rem;
+            max-width: 880px;
+        }
+
+            #br-block p {
+                margin: 0;
+                font-weight: 700; /* légèrement gras */
+            }
+
+        /* Bouton Discord (blurple) */
+        .discord-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #5865F2; /* Discord Blurple */
+            color: #fff;
+            font-weight: 700;
+            padding: 10px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            border: none;
+            box-shadow: 0 4px 10px rgba(88,101,242,0.3);
+            transition: transform .05s ease, box-shadow .2s ease, background-color .2s ease;
+            line-height: 1;
+        }
+
+            .discord-btn:hover {
+                background-color: #4752C4; /* hover */
+                box-shadow: 0 6px 14px rgba(71,82,196,0.35);
+            }
+
+            .discord-btn:active {
+                transform: translateY(1px);
+                background-color: #3C45A5; /* active */
+            }
+
+            .discord-btn svg {
+                width: 20px;
+                height: 20px;
+                flex: 0 0 20px;
+                display: block;
+                vertical-align: middle;
+                fill: currentColor; /* hérite du blanc */
+            }
+
+            .discord-btn span {
+                display: inline-block;
+                line-height: 1;
+            }
+
+        /* Langues dispo (désormais 2 lignes) */
         #available-langs {
             margin-top: 0.35rem;
             font-size: 0.9rem;
             color: rgba(0,0,0,0.7);
+            display: inline-block;
+            text-align: center;
         }
+
+            #available-langs .label {
+                display: block;
+                font-weight: 600;
+            }
+
+            #available-langs .list {
+                margin-top: 2px;
+            }
 
         /* Lecteur YouTube piloté par variables CSS + aspect-ratio */
         .video-wrapper {
             width: var(--video-width, 100%);
             max-width: var(--video-max-width, 720px);
-            aspect-ratio: var(--video-ar, 16 / 9); /* hauteur liée à la largeur */
+            aspect-ratio: var(--video-ar, 16 / 9);
             background: #000;
             border-radius: 6px;
             overflow: hidden;
@@ -114,7 +178,7 @@
             .video-wrapper.no-ar {
                 aspect-ratio: auto;
                 height: 0;
-                padding-bottom: var(--video-padding, 56.25%); /* calc h/w en % */
+                padding-bottom: var(--video-padding, 56.25%);
             }
 
                 .video-wrapper.no-ar iframe {
@@ -243,22 +307,21 @@
     </style>
 </head>
 <body>
-    <!-- Header full-bleed -->
-    <header class="site-header-full" role="banner" aria-label="En-tête du site">
-        <img id="lolo-img" src="ressources/logo_fr.svg" alt="Illustration localisée" loading="eager" onerror="handleImageError(this)" />
-    </header>
-
+    <!-- Header full-bleed --> <header class="site-header-full" role="banner" aria-label="En-tête du site"> <img id="lolo-img" src="ressources/logo_fr.svg" alt="Illustration localisée" loading="eager" onerror="handleImageError(this)" /> </header>
     <div class="container">
         <main class="content" role="main">
             <h1 id="main-title">19x19</h1>
 
-            <!-- Sous-titre: le @handle devient un lien cliquable -->
+            <!-- Nouveau bloc: 8 lignes (br0 à br7) -->
+            <div id="br-block" aria-live="polite"></div>
+
+            <!-- Sous-titre: le handle devient un lien cliquable -->
             <p id="subtitle" aria-live="polite"></p>
 
             <!-- Lecteur YouTube -->
             <div id="latest-video" class="video-wrapper" aria-live="polite" aria-label="Dernière vidéo"></div>
 
-            <!-- Langues disponibles -->
+            <!-- Langues disponibles (2 lignes) -->
             <div id="available-langs" aria-hidden="true"></div>
 
             <!-- Lien Notion (seul lien visible demandé) -->
@@ -313,9 +376,33 @@
 
         /* ---------- Translations (TSV) ---------- */
         const FALLBACK_TRANSLATIONS = {
-            fr: { title: "19x19", subtitle: "Site internet de la chaîne Youtube @goban19x19.", link: "Téléchargement des fichiers SGF", donate: "Me soutenir financièrement" },
-            en: { title: "19x19", subtitle: "Website of the Youtube channel @goban19x19.", link: "Download SGF files", donate: "Support me financially if you can" },
-            de: { title: "19x19", subtitle: "Webseite des Youtube-Kanals @goban19x19.", link: "Herunterladen von SGF-Dateien", donate: "Unterstützen Sie mich finanziell, wenn Sie können" }
+            fr: {
+                title: "19x19",
+                subtitle: "Site internet de la chaîne Youtube @goban19x19.",
+                link: "Téléchargement des fichiers SGF",
+                donate: "Me soutenir financièrement",
+                languages: "Langues disponibles :",
+                br0: "", br1: "", br2: "", br3: "", br4: "", br5: "Rejoins le serveur Discord", br6: "", br7: "",
+                discord: "https://discord.gg/RdWjyftz"
+            },
+            en: {
+                title: "19x19",
+                subtitle: "Website of the Youtube channel @goban19x19.",
+                link: "Download SGF files",
+                donate: "Support me financially if you can",
+                languages: "Available languages:",
+                br0: "", br1: "", br2: "", br3: "", br4: "", br5: "Join the Discord server", br6: "", br7: "",
+                discord: "https://discord.gg/RdWjyftz"
+            },
+            de: {
+                title: "19x19",
+                subtitle: "Webseite des Youtube-Kanals @goban19x19.",
+                link: "Herunterladen von SGF-Dateien",
+                donate: "Unterstützen Sie mich finanziell, wenn Sie können",
+                languages: "Verfügbare Sprachen:",
+                br0: "", br1: "", br2: "", br3: "", br4: "", br5: "Tritt dem Discord-Server bei", br6: "", br7: "",
+                discord: "https://discord.gg/RdWjyftz"
+            }
         };
         let TRANSLATIONS = {};
         let AVAILABLE_LANGS = [];
@@ -349,13 +436,10 @@
                     const cols = lines[i].split('\t');
                     const lang = (cols[0] || '').trim(); if (!lang) continue;
                     const obj = {};
-                    for (let j = 1; j < headers.length; j++) obj[headers[j].trim()] = (cols[j] || '').trim();
-                    out[lang] = {
-                        title: obj.title || '',
-                        subtitle: obj.subtitle || '',
-                        link: obj.link || '',
-                        donate: obj.donate || ''
-                    };
+                    for (let j = 1; j < headers.length; j++) {
+                        obj[headers[j].trim()] = (cols[j] || '').trim();
+                    }
+                    out[lang] = obj;
                 }
             } else {
                 for (const line of lines) {
@@ -380,6 +464,13 @@
             if (AVAILABLE_LANGS.includes('fr')) return 'fr';
             return AVAILABLE_LANGS[0] || 'fr';
         }
+
+        /**
+         * Build subtitle fragment:
+         * - When an @handle is found (e.g. @goban19x19) it becomes a link to https://www.youtube.com/@goban19x19
+         * - The visible text for that link removes the prefix '@goban' if present, resulting in "19x19".
+         * - If no @handle found, and fallbackHandle provided (from js/config.js), a link is inserted similarly.
+         */
         function buildSubtitleFragment(text, fallbackHandle) {
             const frag = document.createDocumentFragment();
             if (!text) { frag.appendChild(document.createTextNode('')); return frag; }
@@ -389,31 +480,86 @@
                 found = true;
                 const idx = m.index;
                 if (idx > lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex, idx)));
-                const handle = m[0];
+                const handle = m[0]; // e.g. "@goban19x19"
                 const a = document.createElement('a');
-                a.href = 'https://www.youtube.com/' + handle; // conserve le @ lisible
-                a.target = '_blank'; a.rel = 'noopener';
-                a.textContent = handle;
+                // href must point to the handle URL (include the @)
+                a.href = 'https://www.youtube.com/' + handle;
+                a.target = '_blank'; a.rel = 'noopener noreferrer';
+                // compute displayed text: remove leading '@', and if it starts with 'goban', remove that prefix
+                let display = handle.replace(/^@/, '');
+                if (display.toLowerCase().startsWith('goban')) {
+                    display = display.replace(/^goban/i, '');
+                }
+                // fallback if display becomes empty
+                if (!display) display = handle.replace(/^@/, '');
+                a.textContent = display;
                 frag.appendChild(a);
                 lastIndex = idx + handle.length;
             }
             if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+            // if no handle found, insert fallback if present
             if (!found && fallbackHandle) {
                 if (text.length > 0) frag.appendChild(document.createTextNode(' '));
                 const a2 = document.createElement('a');
-                a2.href = 'https://www.youtube.com/' + fallbackHandle;
-                a2.target = '_blank'; a2.rel = 'noopener';
-                a2.textContent = fallbackHandle;
+                // Ensure fallbackHandle includes @ if necessary
+                const fh = (fallbackHandle.startsWith('@')) ? fallbackHandle : ('@' + fallbackHandle);
+                a2.href = 'https://www.youtube.com/' + fh;
+                a2.target = '_blank'; a2.rel = 'noopener noreferrer';
+                let display2 = fh.replace(/^@/, '');
+                if (display2.toLowerCase().startsWith('goban')) display2 = display2.replace(/^goban/i, '');
+                if (!display2) display2 = fh.replace(/^@/, '');
+                a2.textContent = display2;
                 frag.appendChild(a2);
             }
             return frag;
         }
 
+        function createDiscordButton(labelText, url) {
+            const a = document.createElement('a');
+            a.className = 'discord-btn';
+            a.href = (typeof url === 'string' && url.trim().length > 0) ? url.trim() : '#';
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.setAttribute('aria-label', labelText || 'Discord');
+
+            // Inline SVG (Bootstrap icons path) - scaled via CSS
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('aria-hidden', 'true');
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.19 12.19 0 0 0-3.658 0 8.258 8.258 0 0 0-.412-.833.051.051 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.041.041 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032c.001.014.01.028.021.037a13.276 13.276 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019c.308-.42.582-.863.818-1.329a.05.05 0 0 0-.01-.059.051.051 0 0 0-.018-.011 8.875 8.875 0 0 1-1.248-.595.05.05 0 0 1-.02-.066.051.051 0 0 1 .015-.019c.084-.063.168-.129.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.052.052 0 0 1 .053.007c.08.066.164.132.248.195a.051.051 0 0 1-.004.085 8.254 8.254 0 0 1-1.249.594.05.05 0 0 0-.03.03.052.052 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.235 13.235 0 0 0 4.001-2.02.049.049 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.034.034 0 0 0-.02-.019Zm-8.198 7.307c-.789 0-1.438-.724-1.438-1.612 0-.889.637-1.613 1.438-1.613.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612Zm5.316 0c-.788 0-1.438-.724-1.438-1.612 0-.889.637-1.613 1.438-1.613.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612Z');
+            svg.appendChild(path);
+
+            const span = document.createElement('span');
+            span.textContent = labelText || 'Discord';
+
+            a.appendChild(svg);
+            a.appendChild(span);
+            return a;
+        }
+
+        function renderBrBlock(t) {
+            const container = document.getElementById('br-block');
+            if (!container) return;
+            container.innerHTML = '';
+            const linesKeys = ['br0', 'br1', 'br2', 'br3', 'br4', 'br5', 'br6', 'br7'];
+            linesKeys.forEach((key) => {
+                const text = (t && typeof t[key] === 'string') ? t[key] : '';
+                if (!text) return;
+                const p = document.createElement('p');
+                if (key === 'br5') {
+                    const url = (t && typeof t.discord === 'string') ? t.discord : '#';
+                    const btn = createDiscordButton(text, url);
+                    p.appendChild(btn);
+                } else {
+                    p.textContent = text;
+                }
+                container.appendChild(p);
+            });
+        }
+
         async function applyTranslationsAndImages() {
             await loadTranslationsTSV();
-
-            const availableElem = document.getElementById('available-langs');
-            if (availableElem) availableElem.textContent = 'Langues disponibles: ' + (AVAILABLE_LANGS.join(', ') || '—');
 
             const lang = detectLangFromAvailable();
             const t = TRANSLATIONS[lang] || TRANSLATIONS['fr'] || FALLBACK_TRANSLATIONS['fr'];
@@ -423,32 +569,37 @@
             const mainTitle = document.getElementById('main-title');
             if (mainTitle) mainTitle.textContent = t.title || '19x19';
 
+            // read config
             const cfg = (window.CHANNEL_CONFIG && typeof window.CHANNEL_CONFIG === 'object') ? window.CHANNEL_CONFIG : {};
-
+            // fallback handle retrieved from config (channelHandle property)
             const fallbackHandle = (cfg.channelHandle && cfg.channelHandle.trim()) ? cfg.channelHandle.trim() : '@goban19x19';
 
+            // Bloc 8 lignes
+            renderBrBlock(t);
+
+            // Sous-titre avec lien @handle (ou fallback from cfg)
             const subtitleElem = document.getElementById('subtitle');
             if (subtitleElem) {
                 subtitleElem.innerHTML = '';
                 subtitleElem.appendChild(buildSubtitleFragment(t.subtitle || '', fallbackHandle));
             }
 
-            // Mettre à jour le texte du seul lien (sgf-link) avec la traduction "link"
+            // Lien Notion (texte traduit)
             const sgfLink = document.getElementById('sgf-link');
             if (sgfLink) {
                 sgfLink.textContent = t.link || (FALLBACK_TRANSLATIONS.fr && FALLBACK_TRANSLATIONS.fr.link) || 'Téléchargement des fichiers SGF';
-                // href : on prend l'URL fournie dans js/config.js si présente, sinon on laisse l'actuelle href
                 if (cfg.sgfUrl && typeof cfg.sgfUrl === 'string' && cfg.sgfUrl.trim().length > 0) {
                     sgfLink.href = cfg.sgfUrl;
                 }
             }
 
-            // Mettre à jour le texte de secours Ko‑fi tout de suite
+            // Ko‑fi (texte de secours)
             const kofiFallback = document.getElementById('kofi-link');
             if (kofiFallback) {
                 kofiFallback.textContent = t.donate || (FALLBACK_TRANSLATIONS.fr && FALLBACK_TRANSLATIONS.fr.donate) || 'Me soutenir financièrement';
             }
 
+            // Logos localisés
             const lolo = document.getElementById('lolo-img');
             if (lolo) setImageWithFallbacks(lolo, [
                 `ressources/logo_${lang}.svg`,
@@ -461,6 +612,25 @@
                 `ressources/logo.svg`,
                 `ressources/logo.png`
             ]);
+
+            // Libellé langues (ligne 1) + liste de codes (ligne 2)
+            const availableElem = document.getElementById('available-langs');
+            if (availableElem) {
+                availableElem.innerHTML = '';
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'label';
+                const defaultLabels = {
+                    fr: 'Langues disponibles :',
+                    en: 'Available languages:',
+                    de: 'Verfügbare Sprachen:'
+                };
+                labelDiv.textContent = t.languages || defaultLabels[lang] || 'Available languages:';
+                const listDiv = document.createElement('div');
+                listDiv.className = 'list';
+                listDiv.textContent = (AVAILABLE_LANGS.join(', ') || '—');
+                availableElem.appendChild(labelDiv);
+                availableElem.appendChild(listDiv);
+            }
         }
 
         /* ---------- Player responsive ---------- */
@@ -533,26 +703,7 @@
             const safeLabel = labelText || 'Me soutenir financièrement';
 
             const srcdoc = `
-<!doctype html><html><head><meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<style>html,body{margin:0;padding:0;overflow:hidden;background:transparent}</style>
-</head><body>
-<script src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"><\/script>
-<script>
-(function(){
-      function draw(){
-        if (window.kofiwidget2 && typeof window.kofiwidget2.init === 'function') {
-          window.kofiwidget2.init(${JSON.stringify(safeLabel)}, ${JSON.stringify(color)}, ${JSON.stringify(id)});
-          window.kofiwidget2.draw();
-        } else {
-          setTimeout(draw, 200);
-        }
-      }
-      draw();
-})();
-<\/script>
-</body></html>`;
-
+<!doctype html><html><head><meta charset="utf-8"/> <meta name="viewport" content="width=device-width, initial-scale=1"/> <style>html,body{margin:0;padding:0;overflow:hidden;background:transparent}</style> </head><body> <script src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"><\/script> <script> (function(){ function draw(){ if (window.kofiwidget2 && typeof window.kofiwidget2.init === 'function') { window.kofiwidget2.init(${JSON.stringify(safeLabel)}, ${JSON.stringify(color)}, ${JSON.stringify(id)}); window.kofiwidget2.draw(); } else { setTimeout(draw, 200); } } draw(); })(); <\/script> </body></html>`;
             // assign srcdoc (isolates the Ko‑fi script)
             iframe.srcdoc = srcdoc;
 

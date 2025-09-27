@@ -12,8 +12,12 @@ window.CHANNEL_CONFIG = {
     playerMaxWidth: "30%",  // 60% de la largeur de la fenêtre
     playerAspect: "4:3", // "16:9" | "4:3""
 
-    // Ton channelId (commence par "UC...")
+    // Le channelId (commence par "UC...")
     channelId: "UCf0Tgec4on1fa8CzDhfLgzA",
+
+    // Le handle de la chaîne (le @handle). Ce sera utilisé comme fallback si aucune mention n'est trouvée dans la traduction.
+    // Mettre le @ devant : ex: "@goban19x19"
+    channelHandle: "@goban19x19",
 
     // Choix: "uploads" | "playlist" | "grid"
     use: "uploads",
