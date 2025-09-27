@@ -1,90 +1,618 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>19x19</title>
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="ressources/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="ressources/favicon-16.png" />
+    <link rel="apple-touch-icon" href="ressources/apple-touch-icon.png" />
+
     <style>
-        body {
-            background-color: #f5d97a; /* couleur plateau de go */
-            color: #111;
-            font-family: Arial, sans-serif;
+        :root {
+            --max-page-width: 1200px;
+            --accent-color: #111;
+            --divider-color: rgba(0,0,0,0.08);
+        }
+
+        html, body {
+            height: 100%;
             margin: 0;
             padding: 0;
-            min-height: 100vh;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+            color: var(--accent-color);
+            background-color: #f5d97a;
+            background-image: url("ressources/background.webp");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* HEADER full-bleed : logo localisé occupe la largeur de la fenêtre */
+        header.site-header-full {
+            width: 100%;
+            display: block;
+            text-align: center;
+            background: transparent;
+            padding: 0.6rem 0;
+            box-sizing: border-box;
+        }
+
+        #lolo-img {
+            width: 100%;
+            height: auto;
+            max-width: 3200px;
+            display: block;
+            margin: 0 auto;
+            background: transparent;
+            box-shadow: none !important;
+            filter: none !important;
+            object-fit: contain;
+        }
+
+        .container {
+            width: 100%;
+            max-width: var(--max-page-width);
+            margin: 0 auto;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        main.content {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            text-align: center;
+            padding: 1.5rem 0 2rem;
+            gap: 0.75rem;
+            width: 100%;
         }
 
         h1 {
-            margin-top: 2rem;
-            font-size: 3rem;
-            font-weight: bold;
+            margin: 0;
+            font-size: 2.25rem;
+            font-weight: 700;
         }
 
-        h2 {
-            margin-top: 1rem;
-            font-size: 1.5rem;
-            font-weight: normal;
+        /* Subtitle plus grand ; contiendra un lien cliquable vers @handle */
+        #subtitle {
+            margin: 0;
+            font-size: 1.55rem;
+            font-weight: 600;
+            max-width: 880px;
         }
 
-        a {
-            margin-top: 2rem;
-            font-size: 1.2rem;
-            color: #111;
-            text-decoration: underline;
+        /* Langues dispo */
+        #available-langs {
+            margin-top: 0.35rem;
+            font-size: 0.9rem;
+            color: rgba(0,0,0,0.7);
+        }
+
+        /* Lecteur YouTube piloté par variables CSS + aspect-ratio */
+        .video-wrapper {
+            width: var(--video-width, 100%);
+            max-width: var(--video-max-width, 720px);
+            aspect-ratio: var(--video-ar, 16 / 9); /* hauteur liée à la largeur */
+            background: #000;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+            margin: 0.75rem auto 0;
+            position: relative;
+        }
+
+            .video-wrapper iframe {
+                width: 100%;
+                height: 100%;
+                border: 0;
+                display: block;
+            }
+
+            .video-wrapper.no-ar {
+                aspect-ratio: auto;
+                height: 0;
+                padding-bottom: var(--video-padding, 56.25%); /* calc h/w en % */
+            }
+
+                .video-wrapper.no-ar iframe {
+                    position: absolute;
+                    inset: 0;
+                }
+
+        /* FOOTER : deux colonnes égales */
+        footer.site-footer {
+            width: 100%;
+            box-sizing: border-box;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            gap: 0;
+            padding: 1rem 0;
+            background: transparent;
+            max-width: none;
+        }
+
+        .site-footer .footer-inner {
+            width: 100%;
+            max-width: var(--max-page-width);
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            gap: 0;
+            padding: 0 1rem;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .footer-left {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding-right: 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .footer-right {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-left: 1.5rem;
+            box-sizing: border-box;
+            border-left: 1px solid var(--divider-color);
+        }
+
+        #site-logo {
+            width: 260px;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            background: transparent;
+        }
+
+        .kofi-widget {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 340px;
+        }
+
+            .kofi-widget > * {
+                transform: scale(1.12);
+                transform-origin: center center;
+            }
+
+        img {
+            box-shadow: none !important;
+            filter: none !important;
+            background: transparent;
+        }
+
+        @media (max-width: 900px) {
+            #site-logo {
+                width: 220px;
+            }
+
+            .kofi-widget {
+                max-width: 260px;
+            }
+        }
+
+        @media (max-width: 760px) {
+            #lolo-img {
+                max-width: 1200px;
+                width: 100%;
+            }
+
+            .site-footer .footer-inner {
+                grid-template-columns: 1fr;
+                row-gap: 12px;
+            }
+
+            .footer-left {
+                justify-content: center;
+                padding-right: 0;
+            }
+
+            .footer-right {
+                border-left: none;
+                padding-left: 0;
+                justify-content: center;
+            }
+
+            #site-logo {
+                width: 180px;
+            }
+
+            .kofi-widget {
+                max-width: 220px;
+            }
+
+            #subtitle {
+                font-size: 1.2rem;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
         }
     </style>
 </head>
 <body>
-    <h1 id="main-title">19x19</h1>
-    <h2 id="subtitle">Site internet de la chaîne Youtube @goban19x19.</h2>
-    <a id="youtube-link" href="https://www.youtube.com/@goban19x19" target="_blank" rel="noopener">
-        Aller sur la chaîne Youtube
-    </a>
+    <!-- Header full-bleed -->
+    <header class="site-header-full" role="banner" aria-label="En-tête du site">
+        <img id="lolo-img" src="ressources/logo_fr.svg" alt="Illustration localisée" loading="eager" onerror="handleImageError(this)" />
+    </header>
+
+    <div class="container">
+        <main class="content" role="main">
+            <h1 id="main-title">19x19</h1>
+
+            <!-- Sous-titre: le @handle devient un lien cliquable -->
+            <p id="subtitle" aria-live="polite"></p>
+
+            <!-- Lecteur YouTube -->
+            <div id="latest-video" class="video-wrapper" aria-live="polite" aria-label="Dernière vidéo"></div>
+
+            <!-- Langues disponibles -->
+            <div id="available-langs" aria-hidden="true"></div>
+
+            <!-- Lien Notion (seul lien visible demandé) -->
+            <a id="sgf-link" class="sgf-link" href="#" target="_blank" rel="noopener noreferrer" aria-label="Ouvre la page Notion dans un nouvel onglet">Téléchargement des fichiers SGF</a>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer" role="contentinfo" aria-label="Pied de page">
+        <div class="footer-inner">
+            <div class="footer-left">
+                <img id="site-logo" src="ressources/logo.svg" alt="Goban 19x19 - logo" loading="eager" onerror="handleImageError(this)" />
+            </div>
+            <div class="footer-right">
+                <div class="kofi-widget" id="kofi-widget-container">
+                    <!-- Lien de secours (sera traduit par JS) -->
+                    <a id="kofi-link" class="kofi-fallback" href="https://ko-fi.com/19x19" target="_blank" rel="noopener">Me soutenir financièrement</a>
+                    <!-- Iframe isolant le widget Ko‑fi -->
+                    <iframe id="kofi-iframe" title="Ko‑fi" style="border:0; width:340px; height:70px; overflow:hidden; background:transparent;" loading="lazy"></iframe>
+                    <noscript><a href="https://ko-fi.com/19x19" target="_blank" rel="noopener">Me soutenir financièrement</a></noscript>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Config (js/config.js) -->
+    <script src="js/config.js"></script>
+
     <script>
-        // Traductions disponibles
-        const translations = {
-            fr: {
-                title: "19x19",
-                subtitle: "Site internet de la chaîne Youtube @goban19x19.",
-                link: "Aller sur la chaîne Youtube"
-            },
-            en: {
-                title: "19x19",
-                subtitle: "Website of the Youtube channel @goban19x19.",
-                link: "Go to the Youtube channel"
-            },
-            de: {
-                title: "19x19",
-                subtitle: "Webseite des Youtube-Kanals @goban19x19.",
-                link: "Zur Youtube-Kanal gehen"
+        /* ---------- Helpers images fallback ---------- */
+        function setImageWithFallbacks(imgElem, sources) {
+            if (!imgElem || !Array.isArray(sources) || sources.length === 0) return;
+            imgElem.dataset.fallbacks = sources.join("|");
+            imgElem.dataset.fallbackIndex = "0";
+            imgElem.onerror = function () { handleImageError(imgElem); };
+            imgElem.src = sources[0];
+        }
+        function handleImageError(imgElem) {
+            if (!imgElem) return;
+            const list = (imgElem.dataset.fallbacks || "").split("|").filter(Boolean);
+            let idx = parseInt(imgElem.dataset.fallbackIndex || "0", 10);
+            if (isNaN(idx)) idx = 0;
+            const next = idx + 1;
+            if (next < list.length) {
+                imgElem.dataset.fallbackIndex = String(next);
+                imgElem.src = list[next];
+            } else {
+                imgElem.style.display = "none";
             }
+        }
+
+        /* ---------- Translations (TSV) ---------- */
+        const FALLBACK_TRANSLATIONS = {
+            fr: { title: "19x19", subtitle: "Site internet de la chaîne Youtube @goban19x19.", link: "Téléchargement des fichiers SGF", donate: "Me soutenir financièrement" },
+            en: { title: "19x19", subtitle: "Website of the Youtube channel @goban19x19.", link: "Download SGF files", donate: "Support me financially if you can" },
+            de: { title: "19x19", subtitle: "Webseite des Youtube-Kanals @goban19x19.", link: "Herunterladen von SGF-Dateien", donate: "Unterstützen Sie mich finanziell, wenn Sie können" }
         };
+        let TRANSLATIONS = {};
+        let AVAILABLE_LANGS = [];
 
-        // Langues supportées
-        const supportedLangs = ["fr", "en", "de"];
-
-        // Détection de la langue du navigateur
-        function detectLang() {
-            const navLang = navigator.language || navigator.userLanguage || "fr";
-            const langCode = navLang.slice(0,2).toLowerCase();
-            return supportedLangs.includes(langCode) ? langCode : "fr";
+        async function loadTranslationsTSV() {
+            try {
+                const res = await fetch('translation.tsv', { cache: "no-cache" });
+                if (!res.ok) throw new Error('translation.tsv not found');
+                const text = await res.text();
+                const parsed = parseTSV(text);
+                if (parsed && Object.keys(parsed).length > 0) {
+                    TRANSLATIONS = parsed;
+                    AVAILABLE_LANGS = Object.keys(parsed);
+                    return;
+                }
+            } catch (err) {
+                console.warn('Impossible de charger translation.tsv :', err);
+            }
+            TRANSLATIONS = FALLBACK_TRANSLATIONS;
+            AVAILABLE_LANGS = Object.keys(FALLBACK_TRANSLATIONS);
+        }
+        function parseTSV(text) {
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length === 0) return null;
+            const firstCols = lines[0].split('\t').map(c => c.trim().toLowerCase());
+            const hasHeader = (firstCols[0] === 'lang' || firstCols[0] === 'language' || firstCols.includes('title'));
+            const out = {};
+            if (hasHeader) {
+                const headers = lines[0].split('\t').map(h => h.trim());
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].split('\t');
+                    const lang = (cols[0] || '').trim(); if (!lang) continue;
+                    const obj = {};
+                    for (let j = 1; j < headers.length; j++) obj[headers[j].trim()] = (cols[j] || '').trim();
+                    out[lang] = {
+                        title: obj.title || '',
+                        subtitle: obj.subtitle || '',
+                        link: obj.link || '',
+                        donate: obj.donate || ''
+                    };
+                }
+            } else {
+                for (const line of lines) {
+                    const cols = line.split('\t');
+                    const lang = (cols[0] || '').trim(); if (!lang) continue;
+                    out[lang] = {
+                        title: (cols[1] || '').trim(),
+                        subtitle: (cols[2] || '').trim(),
+                        link: (cols[3] || '').trim(),
+                        donate: (cols[4] || '').trim()
+                    };
+                }
+            }
+            return out;
+        }
+        function detectLangFromAvailable() {
+            const nav = navigator.language || navigator.userLanguage || 'fr';
+            const navLang = (nav || 'fr').slice(0, 2).toLowerCase();
+            if (AVAILABLE_LANGS.includes(navLang)) return navLang;
+            const full = (nav || 'fr').toLowerCase();
+            for (const l of AVAILABLE_LANGS) if (full.startsWith(l)) return l;
+            if (AVAILABLE_LANGS.includes('fr')) return 'fr';
+            return AVAILABLE_LANGS[0] || 'fr';
+        }
+        function buildSubtitleFragment(text, fallbackHandle) {
+            const frag = document.createDocumentFragment();
+            if (!text) { frag.appendChild(document.createTextNode('')); return frag; }
+            const regex = /@[\w-]+/g;
+            let lastIndex = 0; let m; let found = false;
+            while ((m = regex.exec(text)) !== null) {
+                found = true;
+                const idx = m.index;
+                if (idx > lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex, idx)));
+                const handle = m[0];
+                const a = document.createElement('a');
+                a.href = 'https://www.youtube.com/' + handle; // conserve le @ lisible
+                a.target = '_blank'; a.rel = 'noopener';
+                a.textContent = handle;
+                frag.appendChild(a);
+                lastIndex = idx + handle.length;
+            }
+            if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+            if (!found && fallbackHandle) {
+                if (text.length > 0) frag.appendChild(document.createTextNode(' '));
+                const a2 = document.createElement('a');
+                a2.href = 'https://www.youtube.com/' + fallbackHandle;
+                a2.target = '_blank'; a2.rel = 'noopener';
+                a2.textContent = fallbackHandle;
+                frag.appendChild(a2);
+            }
+            return frag;
         }
 
-        // Application des traductions
-        function applyTranslations() {
-            const lang = detectLang();
-            const t = translations[lang];
+        async function applyTranslationsAndImages() {
+            await loadTranslationsTSV();
+
+            const availableElem = document.getElementById('available-langs');
+            if (availableElem) availableElem.textContent = 'Langues disponibles: ' + (AVAILABLE_LANGS.join(', ') || '—');
+
+            const lang = detectLangFromAvailable();
+            const t = TRANSLATIONS[lang] || TRANSLATIONS['fr'] || FALLBACK_TRANSLATIONS['fr'];
+
             document.documentElement.lang = lang;
-            document.getElementById("main-title").textContent = t.title;
-            document.getElementById("subtitle").textContent = t.subtitle;
-            document.getElementById("youtube-link").textContent = t.link;
+
+            const mainTitle = document.getElementById('main-title');
+            if (mainTitle) mainTitle.textContent = t.title || '19x19';
+
+            const cfg = (window.CHANNEL_CONFIG && typeof window.CHANNEL_CONFIG === 'object') ? window.CHANNEL_CONFIG : {};
+
+            const fallbackHandle = (cfg.channelHandle && cfg.channelHandle.trim()) ? cfg.channelHandle.trim() : '@goban19x19';
+
+            const subtitleElem = document.getElementById('subtitle');
+            if (subtitleElem) {
+                subtitleElem.innerHTML = '';
+                subtitleElem.appendChild(buildSubtitleFragment(t.subtitle || '', fallbackHandle));
+            }
+
+            // Mettre à jour le texte du seul lien (sgf-link) avec la traduction "link"
+            const sgfLink = document.getElementById('sgf-link');
+            if (sgfLink) {
+                sgfLink.textContent = t.link || (FALLBACK_TRANSLATIONS.fr && FALLBACK_TRANSLATIONS.fr.link) || 'Téléchargement des fichiers SGF';
+                // href : on prend l'URL fournie dans js/config.js si présente, sinon on laisse l'actuelle href
+                if (cfg.sgfUrl && typeof cfg.sgfUrl === 'string' && cfg.sgfUrl.trim().length > 0) {
+                    sgfLink.href = cfg.sgfUrl;
+                }
+            }
+
+            // Mettre à jour le texte de secours Ko‑fi tout de suite
+            const kofiFallback = document.getElementById('kofi-link');
+            if (kofiFallback) {
+                kofiFallback.textContent = t.donate || (FALLBACK_TRANSLATIONS.fr && FALLBACK_TRANSLATIONS.fr.donate) || 'Me soutenir financièrement';
+            }
+
+            const lolo = document.getElementById('lolo-img');
+            if (lolo) setImageWithFallbacks(lolo, [
+                `ressources/logo_${lang}.svg`,
+                `ressources/logo.svg`,
+                `ressources/logo_${lang}.png`,
+                `ressources/logo.png`
+            ]);
+            const siteLogo = document.getElementById('site-logo');
+            if (siteLogo) setImageWithFallbacks(siteLogo, [
+                `ressources/logo.svg`,
+                `ressources/logo.png`
+            ]);
         }
 
-        applyTranslations();
+        /* ---------- Player responsive ---------- */
+        function parsePlayerMaxWidth(value) {
+            if (value === undefined || value === null) return { type: "px", value: "720px" };
+            if (typeof value === "number") return { type: "px", value: Math.max(0, Math.round(value)) + "px" };
+            const v = String(value).trim();
+            if (v.endsWith("%")) return { type: "percent", value: v };
+            if (v.endsWith("vw")) return { type: "vw", value: v };
+            if (v.endsWith("px")) return { type: "px", value: v };
+            if (/^\d+$/.test(v)) return { type: "px", value: v + "px" };
+            return { type: "px", value: v };
+        }
+        function parseAspect(aspect) {
+            if (!aspect) return { w: 16, h: 9 };
+            if (typeof aspect === "number") return { w: aspect, h: 1 };
+            if (typeof aspect === "string") {
+                const s = aspect.trim();
+                if (s.includes(":")) {
+                    const [w, h] = s.split(":").map(Number);
+                    if (!isNaN(w) && !isNaN(h) && h > 0) return { w, h };
+                }
+                const n = Number(s);
+                if (!isNaN(n) && n > 0) return { w: n, h: 1 };
+            }
+            if (typeof aspect === "object" && aspect.w && aspect.h) return { w: Number(aspect.w), h: Number(aspect.h) };
+            return { w: 16, h: 9 };
+        }
+        function setVideoWrapperSize(wrapper, playerMaxWidthConfig, playerAspectConfig) {
+            const parsed = parsePlayerMaxWidth(playerMaxWidthConfig);
+            const aspect = parseAspect(playerAspectConfig);
+            const arString = `${aspect.w} / ${aspect.h}`;
+            const paddingPercent = (Number(aspect.h) / Number(aspect.w)) * 100;
+
+            wrapper.style.setProperty('--video-ar', arString);
+
+            const supportsAR = (typeof CSS !== 'undefined') && CSS.supports && CSS.supports('aspect-ratio', '1 / 1');
+            if (!supportsAR) {
+                wrapper.classList.add('no-ar');
+                wrapper.style.setProperty('--video-padding', paddingPercent + '%');
+            } else {
+                wrapper.classList.remove('no-ar');
+                wrapper.style.removeProperty('--video-padding');
+            }
+
+            if (parsed.type === 'percent') {
+                wrapper.style.setProperty('--video-width', parsed.value);
+                wrapper.style.removeProperty('--video-max-width');
+            } else if (parsed.type === 'vw') {
+                wrapper.style.setProperty('--video-width', parsed.value);
+                wrapper.style.removeProperty('--video-max-width');
+            } else {
+                wrapper.style.setProperty('--video-width', '100%');
+                wrapper.style.setProperty('--video-max-width', parsed.value);
+            }
+        }
+
+        function uploadsPlaylistId(channelId) {
+            if (!channelId || !channelId.startsWith('UC')) return '';
+            return 'UU' + channelId.substring(2);
+        }
+
+        /* ---------- Ko‑fi isolé dans un iframe ---------- */
+        function renderKoFiIsolated(labelText) {
+            const iframe = document.getElementById('kofi-iframe');
+            if (!iframe) return;
+
+            const color = '#a17137';
+            const id = 'L4L41LW819';
+            const safeLabel = labelText || 'Me soutenir financièrement';
+
+            const srcdoc = `
+<!doctype html><html><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>html,body{margin:0;padding:0;overflow:hidden;background:transparent}</style>
+</head><body>
+<script src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"><\/script>
+<script>
+(function(){
+      function draw(){
+        if (window.kofiwidget2 && typeof window.kofiwidget2.init === 'function') {
+          window.kofiwidget2.init(${JSON.stringify(safeLabel)}, ${JSON.stringify(color)}, ${JSON.stringify(id)});
+          window.kofiwidget2.draw();
+        } else {
+          setTimeout(draw, 200);
+        }
+      }
+      draw();
+})();
+<\/script>
+</body></html>`;
+
+            // assign srcdoc (isolates the Ko‑fi script)
+            iframe.srcdoc = srcdoc;
+
+            // Masquer le lien fallback après rendu (petit délai)
+            const fallback = document.getElementById('kofi-link');
+            if (fallback) {
+                setTimeout(() => { fallback.style.display = 'none'; }, 1200);
+            }
+        }
+
+        function insertUploadsPlaylist(channelId) {
+            const container = document.getElementById('latest-video');
+            container.innerHTML = '';
+
+            const cfg = (window.CHANNEL_CONFIG && typeof window.CHANNEL_CONFIG === 'object') ? window.CHANNEL_CONFIG : {};
+            const playerMax = (cfg.playerMaxWidth !== undefined) ? cfg.playerMaxWidth : 720;
+            const playerAspect = cfg.playerAspect || "16:9";
+
+            // Appliquer largeur/hauteur
+            setVideoWrapperSize(container, playerMax, playerAspect);
+
+            const uploads = uploadsPlaylistId(channelId || cfg.channelId);
+            if (!uploads) {
+                const linkWrap = document.createElement('div');
+                linkWrap.style.position = 'absolute'; linkWrap.style.inset = '0';
+                linkWrap.style.display = 'flex'; linkWrap.style.alignItems = 'center'; linkWrap.style.justifyContent = 'center';
+                linkWrap.style.background = 'rgba(0,0,0,0.25)';
+                const a = document.createElement('a');
+                a.href = 'https://www.youtube.com/@goban19x19'; a.target = '_blank'; a.rel = 'noopener';
+                a.textContent = 'Voir la chaîne YouTube @goban19x19';
+                a.style.color = '#fff'; a.style.fontWeight = 'bold'; a.style.textDecoration = 'underline';
+                linkWrap.appendChild(a); container.appendChild(linkWrap); return;
+            }
+
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://www.youtube.com/embed?listType=playlist&list=${encodeURIComponent(uploads)}&rel=0`;
+            iframe.title = 'Dernière vidéo 19x19';
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+            iframe.allowFullscreen = true;
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = '0';
+            container.appendChild(iframe);
+        }
+
+        (async function init() {
+            await applyTranslationsAndImages();
+
+            const cfg = (window.CHANNEL_CONFIG && typeof window.CHANNEL_CONFIG === 'object') ? window.CHANNEL_CONFIG : {};
+
+            // Récupère la traduction courante
+            const lang = document.documentElement.lang || 'fr';
+            const t = TRANSLATIONS[lang] || TRANSLATIONS['fr'] || FALLBACK_TRANSLATIONS['fr'];
+
+            // Ko‑fi (isolé dans un iframe) avec libellé traduit
+            renderKoFiIsolated(t.donate || 'Me soutenir financièrement');
+
+            // Lecteur YouTube (uploads)
+            insertUploadsPlaylist(cfg.channelId || 'UCf0Tgec4on1fa8CzDhfLgzA');
+        })();
     </script>
 </body>
 </html>
