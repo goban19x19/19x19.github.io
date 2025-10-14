@@ -497,20 +497,21 @@
     </footer>
 
     <script>
-        // Remplace ces constantes par ton script (ou par tokens)
-        const NAME = "Incroyable, un coup mystifiant qui renverse totalement la partie";
-        const SGF_BASENAME = "test.sgf";
-        const YT_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+        // Placeholders to be replaced by your upload script.
+        // String placeholders MUST be quoted. Boolean placeholder MUST be the literal true or false (no quotes).
+        const NAME = "__NAME__";
+        const SGF_BASENAME = "__SGF_BASENAME__";            // with extension, e.g. "00001.sgf"
+        const SGF_BASENAME_NOEXT = "__SGF_BASENAME_NOEXT__"; // without extension, e.g. "00001"
+        const YT_URL = "__YT_URL__";
 
-        // 4/ Prévoir le cas où la variable IS_KATAGO n'est pas transmise :
-        // si un script externe (ou l'API) définit window.IS_KATAGO, on l'utilisera,
-        // sinon on prend false par défaut.
+        // IS_KATAGO is injected as a bare token: __IS_KATAGO__ -> true or false
+        // We also set window.IS_KATAGO so legacy checks in the page keep working.
+        window.IS_KATAGO = __IS_KATAGO__;
+        // Local JS fallback (keeps previous behavior)
         let IS_KATAGO = false;
         if (typeof window.IS_KATAGO !== 'undefined') {
             IS_KATAGO = !!window.IS_KATAGO;
         }
-        // (pour tests locaux tu peux forcer true/false ici si besoin)
-        // IS_KATAGO = true;
     </script>
 
     <script>
@@ -609,7 +610,7 @@
                 }
             })();
 
-            const sgfAbs = window.location.origin + "/sgf/" + SGF_BASENAME.replace(/^\/+/, '');
+            const sgfAbs = new URL(SGF_BASENAME.replace(/^\/+/, ''), window.location.href).href;
 
             createEditorDivWithAttrs(sgfAbs);
 
@@ -827,11 +828,11 @@
                 }
                 linkSgf.textContent = label;
 
-                // href remains the SGF download link (unchanged)
-                const origin = window.location.origin || (window.location.protocol + '//' + window.location.host);
+                // Point download link to SGF stored alongside this page
                 let basename = SGF_BASENAME || '';
                 if (basename && !basename.toLowerCase().endsWith('.sgf')) basename = basename + '.sgf';
-                linkSgf.href = origin + "/sgf/" + (basename || '');
+                const sanitized = (basename || '').replace(/^\/+/, '');
+                linkSgf.href = new URL(sanitized, window.location.href).href;
                 linkSgf.setAttribute('download', basename || '');
             }
 
