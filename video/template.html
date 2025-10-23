@@ -745,6 +745,26 @@
         };
         let TRANSLATIONS = {};
         let AVAILABLE_LANGS = [];
+        let LANG_KEY_MAP = {};
+
+        function normalizeLangKey(key) {
+            return String(key || '')
+                .trim()
+                .toLowerCase()
+                .replace(/_/g, '-');
+        }
+
+        function rebuildLanguageMaps() {
+            AVAILABLE_LANGS = Object.keys(TRANSLATIONS || {});
+            LANG_KEY_MAP = {};
+            for (const original of AVAILABLE_LANGS) {
+                const norm = normalizeLangKey(original);
+                if (!norm) continue;
+                if (!Object.prototype.hasOwnProperty.call(LANG_KEY_MAP, norm)) {
+                    LANG_KEY_MAP[norm] = original;
+                }
+            }
+        }
 
         async function loadTranslationsTSV() {
             try {
@@ -754,14 +774,14 @@
                 const parsed = parseTSV(text);
                 if (parsed && Object.keys(parsed).length > 0) {
                     TRANSLATIONS = parsed;
-                    AVAILABLE_LANGS = Object.keys(parsed);
+                    rebuildLanguageMaps();
                     return;
                 }
             } catch (err) {
                 console.warn('Impossible de charger translation.tsv :', err);
             }
             TRANSLATIONS = FALLBACK_TRANSLATIONS;
-            AVAILABLE_LANGS = Object.keys(FALLBACK_TRANSLATIONS);
+            rebuildLanguageMaps();
         }
 
         function parseTSV(text) {
@@ -781,17 +801,45 @@
             return out;
         }
 
+        function matchAvailableLanguage(code) {
+            const normalized = normalizeLangKey(code);
+            if (!normalized) return null;
+            const parts = normalized.split('-');
+            while (parts.length >= 1) {
+                const candidate = parts.join('-');
+                if (Object.prototype.hasOwnProperty.call(LANG_KEY_MAP, candidate)) {
+                    return LANG_KEY_MAP[candidate];
+                }
+                parts.pop();
+            }
+            return null;
+        }
+
         function detectLangFromAvailable() {
-            const nav = navigator.language || navigator.userLanguage || 'fr';
-            const navLang = (nav || 'fr').slice(0, 2).toLowerCase();
-            if (AVAILABLE_LANGS.includes(navLang)) return navLang;
-            const full = (nav || 'fr').toLowerCase();
-            for (const l of AVAILABLE_LANGS) if (full.startsWith(l)) return l;
-            if (AVAILABLE_LANGS.includes('fr')) return 'fr';
+            const candidates = [];
+            if (Array.isArray(navigator.languages)) {
+                for (const entry of navigator.languages) {
+                    if (entry) candidates.push(entry);
+                }
+            }
+            if (navigator.language) candidates.push(navigator.language);
+            if (navigator.userLanguage) candidates.push(navigator.userLanguage);
+
+            for (const candidate of candidates) {
+                const match = matchAvailableLanguage(candidate);
+                if (match) return match;
+            }
+
+            const fallbackOrder = ['fr', 'en'];
+            for (const fb of fallbackOrder) {
+                const found = matchAvailableLanguage(fb);
+                if (found) return found;
+            }
+
             return AVAILABLE_LANGS[0] || 'fr';
         }
 
-        function resolveGDriveVideoUrl() {
+        function resolveGDriveVideoUrl(preferredLang) {
             const normalized = {};
             for (const [lang, rawUrl] of Object.entries(GDRIVE_VIDEO_URLS)) {
                 if (!lang) continue;
@@ -799,27 +847,33 @@
                 normalized[key] = (rawUrl || '').trim();
             }
 
-            const candidateLangs = [];
-            if (Array.isArray(navigator.languages)) {
-                for (const entry of navigator.languages) {
-                    if (entry) candidateLangs.push(entry);
-                }
-            }
-            if (navigator.language) candidateLangs.push(navigator.language);
+            const candidates = [];
 
-            const tried = new Set();
-            for (const candidate of candidateLangs) {
-                const clean = String(candidate || '').trim();
-                if (!clean) continue;
+            function pushLangVariants(code) {
+                const clean = String(code || '').trim();
+                if (!clean) return;
                 const parts = clean.toLowerCase().replace(/_/g, '-').split('-');
                 for (let i = parts.length; i >= 1; i--) {
-                    const code = parts.slice(0, i).join('-');
-                    if (tried.has(code)) continue;
-                    tried.add(code);
-                    const url = normalized[code];
-                    if (typeof url === 'string' && url.length > 0) {
-                        return url;
+                    const variant = parts.slice(0, i).join('-');
+                    if (!candidates.includes(variant)) {
+                        candidates.push(variant);
                     }
+                }
+            }
+
+            pushLangVariants(preferredLang);
+            if (Array.isArray(navigator.languages) && navigator.languages.length > 0) {
+                pushLangVariants(navigator.languages[0]);
+            }
+            pushLangVariants(navigator.language);
+
+            const tried = new Set();
+            for (const code of candidates) {
+                if (tried.has(code)) continue;
+                tried.add(code);
+                const url = normalized[code];
+                if (typeof url === 'string' && url.length > 0) {
+                    return url;
                 }
             }
 
@@ -956,7 +1010,7 @@
             const driveWrapper = document.getElementById('gdrive-wrapper');
             const driveFrame = document.getElementById('gdrive-frame');
             if (driveWrapper && driveFrame) {
-                const rawDriveUrl = resolveGDriveVideoUrl();
+                const rawDriveUrl = resolveGDriveVideoUrl(lang);
                 const normalizedDriveUrl = normalizeGDriveEmbedUrl(rawDriveUrl);
                 if (normalizedDriveUrl) {
                     driveFrame.src = normalizedDriveUrl;
