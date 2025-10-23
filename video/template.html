@@ -507,54 +507,60 @@
         const YT_URL = "https://www.youtube.com/watch?v=qwkr6W7CU7Y";
         // Google Drive video URLs by locale (populated by an external script)
         const GDRIVE_VIDEO_URLS = {
-            "zh-CN": "",
-            "zh-Hans": "",
-            "zh-TW": "",
-            "zh-Hant": "",
-            "zh-HK": "",
-            "ja": "",
-            "ko": "",
-            "en": "",
-            "ru": "",
+            "zh-CN": "__zh-CN__",
+            "zh-Hans": "__zh-Hans__",
+            "zh-TW": "__zh-TW__",
+            "zh-Hant": "__zh-Hant__",
+            "zh-HK": "__zh-HK__",
+            "ja": "__ja__",
+            "ko": "__ko__",
+            "en": "__en__",
+            "ru": "__ru__",
             "de": "https://drive.google.com/file/d/1qpVwY0zeLUWl0Bw_nCoZgWL9Xp8hiAv1/view?usp=drive_link",
-            "pl": "",
-            "cs": "",
-            "uk": "",
-            "es-ES": "",
-            "es": "",
-            "pt": "",
-            "pt-PT": "",
-            "it": "",
-            "nl": "",
-            "hu": "",
-            "ro": "",
-            "tr": "",
-            "vi": "",
-            "id": "",
-            "th": "",
-            "he": "",
-            "ar": "",
-            "fa": "",
-            "sv": "",
-            "fi": "",
-            "el": "",
-            "sr": "",
-            "hr": "",
-            "bs": "",
-            "bg": "",
-            "da": "",
-            "fr": ""
+            "pl": "__pl__",
+            "cs": "__cs__",
+            "uk": "__uk__",
+            "es-ES": "__es-ES__",
+            "es": "__es__",
+            "pt": "__pt__",
+            "pt-PT": "__pt-PT__",
+            "it": "__it__",
+            "nl": "__nl__",
+            "hu": "__hu__",
+            "ro": "__ro__",
+            "tr": "__tr__",
+            "vi": "__vi__",
+            "id": "__id__",
+            "th": "__th__",
+            "he": "__he__",
+            "ar": "__ar__",
+            "fa": "__fa__",
+            "sv": "__sv__",
+            "fi": "__fi__",
+            "el": "__el__",
+            "sr": "__sr__",
+            "hr": "__hr__",
+            "bs": "__bs__",
+            "bg": "__bg__",
+            "da": "__da__",
+            "fr": "__fr__"
         };
 
-        // 4/ Prévoir le cas où la variable IS_KATAGO n'est pas transmise :
-        // si un script externe (ou l'API) définit window.IS_KATAGO, on l'utilisera,
-        // sinon on prend false par défaut.
-        let IS_KATAGO = false;
-        if (typeof window.IS_KATAGO !== 'undefined') {
-            IS_KATAGO = !!window.IS_KATAGO;
+        function isPlaceholderString(value) {
+            return typeof value === "string" && /^__[a-z0-9-]+__$/i.test(value.trim());
         }
-        // (pour tests locaux tu peux forcer true/false ici si besoin)
-        // IS_KATAGO = true;
+
+        const RAW_IS_KATAGO = "__IS_KATAGO__";
+        const IS_KATAGO = (() => {
+            if (RAW_IS_KATAGO === "__IS_KATAGO__") return false;
+            if (typeof RAW_IS_KATAGO === "boolean") return RAW_IS_KATAGO;
+            if (typeof RAW_IS_KATAGO === "string") {
+                const val = RAW_IS_KATAGO.trim().toLowerCase();
+                if (val === "true") return true;
+                if (val === "false") return false;
+            }
+            return Boolean(RAW_IS_KATAGO);
+        })();
     </script>
 
     <script>
@@ -844,7 +850,10 @@
             for (const [lang, rawUrl] of Object.entries(GDRIVE_VIDEO_URLS)) {
                 if (!lang) continue;
                 const key = lang.toLowerCase().replace(/_/g, '-');
-                normalized[key] = (rawUrl || '').trim();
+                const value = typeof rawUrl === 'string'
+                    ? rawUrl.trim()
+                    : (rawUrl == null ? '' : String(rawUrl).trim());
+                normalized[key] = isPlaceholderString(value) ? '' : value;
             }
 
             const candidates = [];
