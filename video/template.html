@@ -826,6 +826,45 @@
             return '';
         }
 
+        function normalizeGDriveEmbedUrl(rawUrl) {
+            const trimmed = (rawUrl || '').trim();
+            if (!trimmed) return '';
+
+            const previewPattern = /^https:\/\/drive\.google\.com\/file\/d\/[^/]+\/preview(\?.*)?$/i;
+            if (previewPattern.test(trimmed)) return trimmed;
+
+            let url;
+            try {
+                url = new URL(trimmed, window.location.href);
+            } catch (err) {
+                return trimmed;
+            }
+
+            const host = url.hostname.toLowerCase();
+            if (!host.includes('drive.google.com')) return trimmed;
+
+            let fileId = '';
+
+            const pathParts = url.pathname.split('/').filter(Boolean);
+            const dIndex = pathParts.indexOf('d');
+            if (dIndex !== -1 && pathParts[dIndex + 1]) {
+                fileId = pathParts[dIndex + 1];
+            }
+
+            if (!fileId) {
+                fileId = url.searchParams.get('id') || '';
+            }
+
+            if (!fileId && (url.pathname === '/uc' || url.pathname === '/open')) {
+                fileId = url.searchParams.get('id') || '';
+            }
+
+            fileId = fileId.replace(/[^a-zA-Z0-9_-]/g, '');
+            if (!fileId) return trimmed;
+
+            return `https://drive.google.com/file/d/${fileId}/preview`;
+        }
+
         /* ---------- Ko‑fi isolé dans un iframe ---------- */
         function renderKoFiIsolated(labelText) {
             const iframe = document.getElementById('kofi-iframe');
@@ -917,9 +956,10 @@
             const driveWrapper = document.getElementById('gdrive-wrapper');
             const driveFrame = document.getElementById('gdrive-frame');
             if (driveWrapper && driveFrame) {
-                const driveUrl = resolveGDriveVideoUrl();
-                if (driveUrl) {
-                    driveFrame.src = driveUrl;
+                const rawDriveUrl = resolveGDriveVideoUrl();
+                const normalizedDriveUrl = normalizeGDriveEmbedUrl(rawDriveUrl);
+                if (normalizedDriveUrl) {
+                    driveFrame.src = normalizedDriveUrl;
                     driveWrapper.hidden = false;
                     driveWrapper.setAttribute('aria-hidden', 'false');
                 } else {
