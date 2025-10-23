@@ -501,10 +501,10 @@
 
     <script>
         // Remplace ces constantes par ton script (ou par tokens)
-        const NAME = "Commentaires de parties de jeu de go";
-        const SGF_BASENAME = "014844315843.sgf";
+        const NAME = "__NAME__";
+        const SGF_BASENAME = "__SGF_BASENAME__";
         // const SGF_BASENAME_NOEXT = "__SGF_BASENAME_NOEXT__"; // without extension, e.g. "00001"
-        const YT_URL = "https://www.youtube.com/watch?v=jxMCniRxWnk";
+        const YT_URL = "__YT_URL__";
         // Google Drive video URLs by locale (populated by an external script)
         const GDRIVE_VIDEO_URLS = {
             "zh-CN": "__zh-CN__",
@@ -525,7 +525,7 @@
             "pt": "__pt__",
             "pt-PT": "__pt-PT__",
             "it": "__it__",
-            "nl": "https://drive.google.com/file/d/1qpVwY0zeLUWl0Bw_nCoZgWL9Xp8hiAv1/view?usp=drivesdk",
+            "nl": "__nl__",
             "hu": "__hu__",
             "ro": "__ro__",
             "tr": "__tr__",
@@ -551,16 +551,7 @@
         }
 
         const RAW_IS_KATAGO = "__IS_KATAGO__";
-        const IS_KATAGO = (() => {
-            if (RAW_IS_KATAGO === "__IS_KATAGO__") return false;
-            if (typeof RAW_IS_KATAGO === "boolean") return RAW_IS_KATAGO;
-            if (typeof RAW_IS_KATAGO === "string") {
-                const val = RAW_IS_KATAGO.trim().toLowerCase();
-                if (val === "true") return true;
-                if (val === "false") return false;
-            }
-            return Boolean(RAW_IS_KATAGO);
-        })();
+        const IS_KATAGO = (typeof RAW_IS_KATAGO === "boolean") ? RAW_IS_KATAGO : false;
     </script>
 
     <script>
