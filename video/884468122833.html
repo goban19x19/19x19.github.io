@@ -1134,19 +1134,20 @@
             const baseName = stripSgfExtension(SGF_BASENAME);
             const langCandidates = buildPosterLangCandidates(lang, match);
 
-            if (!posterEl || !baseName) {
+            if (iframeEl.src !== videoUrl) {
                 iframeEl.src = videoUrl;
+            }
+
+            if (!posterEl || !baseName) {
                 return false;
             }
 
             posterEl.style.backgroundImage = '';
             posterEl.setAttribute('aria-hidden', 'true');
 
-            iframeEl.removeAttribute('src');
             const posterPath = await findPosterImage(baseName, langCandidates);
 
             if (!posterPath) {
-                iframeEl.src = videoUrl;
                 return false;
             }
 
