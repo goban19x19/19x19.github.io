@@ -666,18 +666,6 @@
             "da": "__da__",
             "fr": "__fr__"
         };
-        const VIDEO_TITLE_LOOKUP = (() => {
-            const map = {};
-            for (const [lang, rawTitle] of Object.entries(VIDEO_TITLE)) {
-                const key = normalizeLangKey(lang);
-                if (!key) continue;
-                if (!Object.prototype.hasOwnProperty.call(map, key)) {
-                    map[key] = rawTitle;
-                }
-            }
-            return map;
-        })();
-
         function isPlaceholderString(value) {
             if (typeof value !== "string") return false;
             const trimmed = value.trim();
@@ -971,6 +959,13 @@
         }
 
         function resolveVideoTitle(preferredLang) {
+            function lookupTitleByNormalizedKey(normKey) {
+                if (!normKey) return '';
+                for (const [k, v] of Object.entries(VIDEO_TITLE || {})) {
+                    if (normalizeLangKey(k) === normKey) return v;
+                }
+                return '';
+            }
             const candidates = [];
             const normalized = normalizeLangKey(preferredLang);
             if (normalized) {
@@ -991,8 +986,7 @@
             }
 
             for (const candidate of candidates) {
-                if (!Object.prototype.hasOwnProperty.call(VIDEO_TITLE_LOOKUP, candidate)) continue;
-                const rawTitle = VIDEO_TITLE_LOOKUP[candidate];
+                const rawTitle = lookupTitleByNormalizedKey(candidate);
                 if (!rawTitle || isPlaceholderString(rawTitle)) continue;
                 const trimmed = String(rawTitle).trim();
                 if (trimmed) return trimmed;
