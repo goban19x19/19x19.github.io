@@ -1122,6 +1122,21 @@
             });
         }
 
+        function ensureDriveAutoplayUrl(url) {
+            const trimmed = String(url || '').trim();
+            if (!trimmed) return '';
+            try {
+                const parsed = new URL(trimmed, window.location.href);
+                parsed.searchParams.set('autoplay', '1');
+                return parsed.toString();
+            } catch (err) {
+                if (/[\?&]autoplay=/.test(trimmed)) {
+                    return trimmed.replace(/autoplay=\d+/i, 'autoplay=1');
+                }
+                return trimmed + (trimmed.includes('?') ? '&' : '?') + 'autoplay=1';
+            }
+        }
+
         async function configureDrivePoster(options) {
             const { posterEl, iframeEl, videoUrl, lang, match } = options || {};
 
@@ -1187,8 +1202,35 @@
             if (!posterEl || !iframeEl) return;
 
             const previewUrl = posterEl.dataset.videoUrl;
-            if (previewUrl && iframeEl.src !== previewUrl) {
-                iframeEl.src = previewUrl;
+            let finalUrl = previewUrl;
+            let autoplayFallbackTimer = null;
+
+            if (previewUrl) {
+                const autoplayUrl = ensureDriveAutoplayUrl(previewUrl);
+                if (autoplayUrl) {
+                    finalUrl = autoplayUrl;
+                    iframeEl.dataset.driveAutoplayPending = '1';
+                    const cleanup = () => {
+                        delete iframeEl.dataset.driveAutoplayPending;
+                        if (autoplayFallbackTimer) {
+                            clearTimeout(autoplayFallbackTimer);
+                            autoplayFallbackTimer = null;
+                        }
+                    };
+                    iframeEl.addEventListener('load', cleanup, { once: true });
+                    autoplayFallbackTimer = setTimeout(() => {
+                        if (iframeEl.dataset.driveAutoplayPending === '1') {
+                            delete iframeEl.dataset.driveAutoplayPending;
+                            if (iframeEl.src !== previewUrl) {
+                                iframeEl.src = previewUrl;
+                            }
+                        }
+                    }, 5000);
+                }
+            }
+
+            if (finalUrl && iframeEl.src !== finalUrl) {
+                iframeEl.src = finalUrl;
             }
 
             posterEl.style.backgroundImage = '';
