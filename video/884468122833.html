@@ -1187,6 +1187,10 @@
                 iframeEl.addEventListener('focus', onDriveIframeFocus, true);
                 iframeEl.dataset.boundDriveFocus = '1';
             }
+            if (wrapperEl && !wrapperEl.dataset.boundPosterPointer) {
+                wrapperEl.addEventListener('pointerdown', onDriveWrapperPointerDown, true);
+                wrapperEl.dataset.boundPosterPointer = '1';
+            }
 
             iframeEl.dataset.posterReady = '1';
             return true;
@@ -1305,6 +1309,17 @@
 
         function onDriveIframeFocus() {
             const posterEl = document.getElementById('gdrive-poster');
+
+        function onDriveWrapperPointerDown(event) {
+            if (!event || event.defaultPrevented) return;
+            if (typeof event.button === 'number' && event.button !== 0) return;
+            const wrapperEl = event.currentTarget || document.getElementById('gdrive-wrapper');
+            const posterEl = document.getElementById('gdrive-poster');
+            const iframeEl = document.getElementById('gdrive-frame');
+            if (!posterEl || posterEl.hidden || !iframeEl) return;
+            activateDrivePoster({ event, allowDefault: true, posterEl, iframeEl, wrapperEl, trigger: 'pointer' });
+        }
+
             const iframeEl = document.getElementById('gdrive-frame');
             if (!posterEl || posterEl.hidden) return;
             const wrapperEl = document.getElementById('gdrive-wrapper');
@@ -1473,4 +1488,6 @@
     </script>
 </body>
 </html>
+
+
 
