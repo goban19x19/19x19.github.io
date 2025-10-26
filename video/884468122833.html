@@ -159,6 +159,20 @@
             box-shadow: 0 6px 18px rgba(0,0,0,0.08);
         }
 
+        .gdrive-copy {
+            max-width: var(--viewer-max-width);
+            margin: 0.75rem auto;
+            text-align: center;
+            color: var(--muted);
+            font-weight: 700;
+            font-size: clamp(0.7rem, 0.4rem + 0.95vw, 1.05rem);
+            line-height: 1.35;
+        }
+
+        .gdrive-copy .gdrive-line {
+            margin: 0.15rem 0;
+        }
+
             .video-wrapper iframe {
                 width: 100%;
                 height: 100%;
@@ -508,11 +522,19 @@
     <div class="container">
         <div class="viewer-wrapper">
             <!-- Vidéo au-dessus de Besogo -->
+            <div id="gdrive-text-top" class="gdrive-copy" aria-hidden="true" hidden>
+                <p id="gdrive-line-1" class="gdrive-line" hidden></p>
+                <p id="gdrive-line-2" class="gdrive-line" hidden></p>
+                <p id="gdrive-line-3" class="gdrive-line" hidden></p>
+            </div>
             <div id="gdrive-wrapper" class="video-wrapper" aria-label="Vidéo Google Drive" aria-hidden="true" hidden>
                 <div id="gdrive-poster" class="poster-overlay" role="button" tabindex="0" aria-label="Play video" hidden>
                     <span class="poster-play-icon" aria-hidden="true"></span>
                 </div>
                 <iframe id="gdrive-frame" title="Google Drive" allow="autoplay; fullscreen" allowfullscreen tabindex="-1"></iframe>
+            </div>
+            <div id="gdrive-text-bottom" class="gdrive-copy" aria-hidden="true" hidden>
+                <p id="gdrive-line-4" class="gdrive-line" hidden></p>
             </div>
             <div class="video-wrapper" aria-label="Vidéo commentée">
                 <iframe id="yt-frame" title="YouTube" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -561,9 +583,49 @@
     <script>
         // Remplace ces constantes par ton script (ou par tokens)
         const NAME = "Commentaire de partie de jeu de go";
+        const VIDEO_TITLE = {
+            "zh-CN": "%%zh-CN%%",
+            "zh-Hans": "%%zh-Hans%%",
+            "zh-TW": "%%zh-TW%%",
+            "zh-Hant": "%%zh-Hant%%",
+            "zh-HK": "%%zh-HK%%",
+            "ja": "%%ja%%",
+            "ko": "%%ko%%",
+            "en": "%%en%%",
+            "ru": "%%ru%%",
+            "de": "%%de%%",
+            "pl": "%%pl%%",
+            "cs": "%%cs%%",
+            "uk": "%%uk%%",
+            "es-ES": "%%es-ES%%",
+            "es": "%%es%%",
+            "pt": "%%pt%%",
+            "pt-PT": "%%pt-PT%%",
+            "it": "%%it%%",
+            "nl": "%%nl%%",
+            "hu": "%%hu%%",
+            "ro": "%%ro%%",
+            "tr": "%%tr%%",
+            "vi": "%%vi%%",
+            "id": "%%id%%",
+            "th": "%%th%%",
+            "he": "%%he%%",
+            "ar": "%%ar%%",
+            "fa": "%%fa%%",
+            "sv": "%%sv%%",
+            "fi": "%%fi%%",
+            "el": "%%el%%",
+            "sr": "%%sr%%",
+            "hr": "%%hr%%",
+            "bs": "%%bs%%",
+            "bg": "%%bg%%",
+            "da": "%%da%%",
+            "fr": "%%fr%%"
+        };
         const SGF_BASENAME = "884468122833.sgf";
         // const SGF_BASENAME_NOEXT = "__SGF_BASENAME_NOEXT__"; // without extension, e.g. "00001"
-        const YT_URL = "";
+        const YT_URL = "https://youtu.be/UAfRHhXLmug";
+        const DRIVE_URL = "__DRIVE_URL__";
         // Google Drive video URLs by locale (populated by an external script)
         const GDRIVE_VIDEO_URLS = {
             "zh-CN": "__zh-CN__",
@@ -573,7 +635,7 @@
             "zh-HK": "__zh-HK__",
             "ja": "__ja__",
             "ko": "__ko__",
-            "en": "__en__",
+            "en": "https://drive.google.com/file/d/1rjLjOQheDDajmo-x-YnUr3StbHUBrzya/view?usp=drivesdk",
             "ru": "__ru__",
             "de": "__de__",
             "pl": "__pl__",
@@ -583,7 +645,7 @@
             "es": "__es__",
             "pt": "__pt__",
             "pt-PT": "__pt-PT__",
-            "it": "__it__",
+            "it": "https://drive.google.com/file/d/15qGjs99eaj8XVgKNxl0eYf8xuvXgfKGI/view?usp=drivesdk",
             "nl": "__nl__",
             "hu": "__hu__",
             "ro": "__ro__",
@@ -604,9 +666,22 @@
             "da": "__da__",
             "fr": "__fr__"
         };
+        const VIDEO_TITLE_LOOKUP = (() => {
+            const map = {};
+            for (const [lang, rawTitle] of Object.entries(VIDEO_TITLE)) {
+                const key = normalizeLangKey(lang);
+                if (!key) continue;
+                if (!Object.prototype.hasOwnProperty.call(map, key)) {
+                    map[key] = rawTitle;
+                }
+            }
+            return map;
+        })();
 
         function isPlaceholderString(value) {
-            return typeof value === "string" && /^__[a-z0-9-]+__$/i.test(value.trim());
+            if (typeof value !== "string") return false;
+            const trimmed = value.trim();
+            return /^__[a-z0-9_-]+__$/i.test(trimmed) || /^%%[a-z0-9_-]+%%$/i.test(trimmed);
         }
 
         const RAW_IS_KATAGO = true;
@@ -893,6 +968,42 @@
             }
 
             return AVAILABLE_LANGS[0] || 'fr';
+        }
+
+        function resolveVideoTitle(preferredLang) {
+            const candidates = [];
+            const normalized = normalizeLangKey(preferredLang);
+            if (normalized) {
+                const parts = normalized.split('-');
+                while (parts.length >= 1) {
+                    const candidate = parts.join('-');
+                    if (!candidates.includes(candidate)) {
+                        candidates.push(candidate);
+                    }
+                    parts.pop();
+                }
+            }
+
+            for (const fallback of ['fr', 'en']) {
+                if (!candidates.includes(fallback)) {
+                    candidates.push(fallback);
+                }
+            }
+
+            for (const candidate of candidates) {
+                if (!Object.prototype.hasOwnProperty.call(VIDEO_TITLE_LOOKUP, candidate)) continue;
+                const rawTitle = VIDEO_TITLE_LOOKUP[candidate];
+                if (!rawTitle || isPlaceholderString(rawTitle)) continue;
+                const trimmed = String(rawTitle).trim();
+                if (trimmed) return trimmed;
+            }
+
+            if (NAME && !isPlaceholderString(NAME)) {
+                const fallback = String(NAME).trim();
+                if (fallback) return fallback;
+            }
+
+            return '';
         }
 
         function resolveGDriveVideoMatch(preferredLang) {
@@ -1252,8 +1363,9 @@
             const prefix = (t.sgf_title_prefix || t['sgf_title_prefix'] || 'Partie commentée dans la vidéo').trim();
             if (titlePrefixEl) titlePrefixEl.textContent = prefix;
             if (titleMainEl) {
-                if (NAME && String(NAME).trim().length > 0) {
-                    titleMainEl.textContent = NAME;
+                const localizedTitle = resolveVideoTitle(lang);
+                if (localizedTitle) {
+                    titleMainEl.textContent = localizedTitle;
                     titleMainEl.style.display = '';
                 } else {
                     titleMainEl.textContent = '';
@@ -1309,6 +1421,12 @@
             const driveWrapper = document.getElementById('gdrive-wrapper');
             const driveFrame = document.getElementById('gdrive-frame');
             const drivePoster = document.getElementById('gdrive-poster');
+            const driveTopText = document.getElementById('gdrive-text-top');
+            const driveBottomText = document.getElementById('gdrive-text-bottom');
+            const driveLine1 = document.getElementById('gdrive-line-1');
+            const driveLine2 = document.getElementById('gdrive-line-2');
+            const driveLine3 = document.getElementById('gdrive-line-3');
+            const driveLine4 = document.getElementById('gdrive-line-4');
             if (driveWrapper && driveFrame) {
                 const driveMatch = resolveGDriveVideoMatch(lang);
                 const normalizedDriveUrl = normalizeGDriveEmbedUrl(driveMatch.url);
@@ -1320,6 +1438,56 @@
                             (lang === 'fr' ? 'Lire la vidéo' : 'Play video');
                         drivePoster.setAttribute('aria-label', playLabel);
                     }
+
+                    const driveUrlText = (typeof DRIVE_URL === 'string' && !isPlaceholderString(DRIVE_URL))
+                        ? DRIVE_URL.trim()
+                        : '';
+                    const line1Text = (t.google_drive_01 || '').trim();
+                    const line2Prefix = (t.google_drive_02 || '').trim();
+                    let line2Text = '';
+                    if (line2Prefix && driveUrlText) {
+                        line2Text = `${line2Prefix} : ${driveUrlText}`;
+                    } else if (line2Prefix) {
+                        line2Text = line2Prefix;
+                    } else if (driveUrlText) {
+                        line2Text = driveUrlText;
+                    }
+                    const line3Text = (t.google_drive_03 || '').trim();
+                    const line4Text = (t.google_drive_04 || '').trim();
+
+                    const topLines = [
+                        { el: driveLine1, text: line1Text },
+                        { el: driveLine2, text: line2Text },
+                        { el: driveLine3, text: line3Text }
+                    ];
+
+                    let topVisible = false;
+                    for (const line of topLines) {
+                        if (!line.el) continue;
+                        const hasText = Boolean(line.text);
+                        line.el.textContent = line.text || '';
+                        line.el.hidden = !hasText;
+                        if (hasText) topVisible = true;
+                    }
+
+                    if (driveTopText) {
+                        driveTopText.hidden = !topVisible;
+                        driveTopText.setAttribute('aria-hidden', topVisible ? 'false' : 'true');
+                    }
+
+                    if (driveLine4) {
+                        const hasBottom = Boolean(line4Text);
+                        driveLine4.textContent = line4Text || '';
+                        driveLine4.hidden = !hasBottom;
+                        if (driveBottomText) {
+                            driveBottomText.hidden = !hasBottom;
+                            driveBottomText.setAttribute('aria-hidden', hasBottom ? 'false' : 'true');
+                        }
+                    } else if (driveBottomText) {
+                        driveBottomText.hidden = true;
+                        driveBottomText.setAttribute('aria-hidden', 'true');
+                    }
+
                     await configureDrivePoster({
                         posterEl: drivePoster,
                         iframeEl: driveFrame,
@@ -1332,6 +1500,21 @@
                     driveFrame.removeAttribute('src');
                     driveWrapper.hidden = true;
                     driveWrapper.setAttribute('aria-hidden', 'true');
+
+                    const linesToClear = [driveLine1, driveLine2, driveLine3, driveLine4];
+                    for (const line of linesToClear) {
+                        if (!line) continue;
+                        line.textContent = '';
+                        line.hidden = true;
+                    }
+                    if (driveTopText) {
+                        driveTopText.hidden = true;
+                        driveTopText.setAttribute('aria-hidden', 'true');
+                    }
+                    if (driveBottomText) {
+                        driveBottomText.hidden = true;
+                        driveBottomText.setAttribute('aria-hidden', 'true');
+                    }
                 }
             }
 
