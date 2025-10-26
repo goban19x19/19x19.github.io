@@ -149,6 +149,7 @@
 
         /* Vidéo : placée au-dessus, même largeur que viewer-box */
         .video-wrapper {
+            position: relative;
             width: 100%;
             aspect-ratio: 16/9;
             background: #000;
@@ -163,6 +164,61 @@
                 height: 100%;
                 border: 0;
                 display: block;
+            }
+
+        .poster-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-color: #000;
+            color: #fff;
+            cursor: pointer;
+            z-index: 2;
+            transition: opacity 0.3s ease;
+        }
+
+            .poster-overlay::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.35);
+            }
+
+            .poster-overlay .poster-play-icon {
+                position: relative;
+                width: clamp(64px, 12vw, 96px);
+                aspect-ratio: 1;
+                border-radius: 50%;
+                background: rgba(0, 0, 0, 0.55);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+                .poster-overlay .poster-play-icon::before {
+                    content: "";
+                    position: absolute;
+                    top: 50%;
+                    left: 52%;
+                    width: 38%;
+                    height: 38%;
+                    background: rgba(255, 255, 255, 0.92);
+                    clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+                    transform: translate(-50%, -50%);
+                }
+
+            .poster-overlay:focus-visible {
+                outline: 3px solid rgba(255, 255, 255, 0.8);
+                outline-offset: 4px;
+            }
+
+            .poster-overlay:not([hidden]) {
+                display: flex;
             }
 
         /* FOOTER : logo à gauche, ko-fi juste à droite, crédits en bas */
@@ -453,7 +509,10 @@
         <div class="viewer-wrapper">
             <!-- Vidéo au-dessus de Besogo -->
             <div id="gdrive-wrapper" class="video-wrapper" aria-label="Vidéo Google Drive" aria-hidden="true" hidden>
-                <iframe id="gdrive-frame" title="Google Drive" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                <div id="gdrive-poster" class="poster-overlay" role="button" tabindex="0" aria-label="Play video" hidden>
+                    <span class="poster-play-icon" aria-hidden="true"></span>
+                </div>
+                <iframe id="gdrive-frame" title="Google Drive" allow="autoplay; fullscreen" allowfullscreen tabindex="-1"></iframe>
             </div>
             <div class="video-wrapper" aria-label="Vidéo commentée">
                 <iframe id="yt-frame" title="YouTube" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -514,7 +573,7 @@
             "zh-HK": "__zh-HK__",
             "ja": "__ja__",
             "ko": "__ko__",
-            "en": "https://drive.google.com/file/d/11c-32E4UFRgysQtbUtTFVnwoMnFhYIqQ/view?usp=drivesdk",
+            "en": "https://drive.google.com/file/d/1jWLyhmZYFcuGIPYNGq6P91W3kIqnyVcG/view?usp=drivesdk",
             "ru": "__ru__",
             "de": "__de__",
             "pl": "__pl__",
@@ -524,7 +583,7 @@
             "es": "__es__",
             "pt": "__pt__",
             "pt-PT": "__pt-PT__",
-            "it": "https://drive.google.com/file/d/1w4Usygru2fPVbcYvrQGqcQbC_TATMZSV/view?usp=drivesdk",
+            "it": "https://drive.google.com/file/d/1CY1mEYwDC6cvq5TMtN5bNSDOp78CVqSK/view?usp=drivesdk",
             "nl": "__nl__",
             "hu": "__hu__",
             "ro": "__ro__",
@@ -836,8 +895,9 @@
             return AVAILABLE_LANGS[0] || 'fr';
         }
 
-        function resolveGDriveVideoUrl(preferredLang) {
+        function resolveGDriveVideoMatch(preferredLang) {
             const normalized = {};
+            const normalizedToOriginal = {};
             for (const [lang, rawUrl] of Object.entries(GDRIVE_VIDEO_URLS)) {
                 if (!lang) continue;
                 const key = lang.toLowerCase().replace(/_/g, '-');
@@ -845,9 +905,22 @@
                     ? rawUrl.trim()
                     : (rawUrl == null ? '' : String(rawUrl).trim());
                 normalized[key] = isPlaceholderString(value) ? '' : value;
+                if (!normalizedToOriginal[key]) {
+                    normalizedToOriginal[key] = lang;
+                }
             }
 
-            const candidates = [];
+            const searchOrder = [];
+            const seenVariants = new Set();
+            const posterCandidates = [];
+
+            function registerPosterCandidate(code) {
+                const normalizedCode = String(code || '').trim();
+                if (!normalizedCode) return;
+                if (!posterCandidates.includes(normalizedCode)) {
+                    posterCandidates.push(normalizedCode);
+                }
+            }
 
             function pushLangVariants(code) {
                 const clean = String(code || '').trim();
@@ -855,8 +928,10 @@
                 const parts = clean.toLowerCase().replace(/_/g, '-').split('-');
                 for (let i = parts.length; i >= 1; i--) {
                     const variant = parts.slice(0, i).join('-');
-                    if (!candidates.includes(variant)) {
-                        candidates.push(variant);
+                    if (!seenVariants.has(variant)) {
+                        seenVariants.add(variant);
+                        searchOrder.push(variant);
+                        registerPosterCandidate(normalizedToOriginal[variant] || variant);
                     }
                 }
             }
@@ -868,16 +943,43 @@
             pushLangVariants(navigator.language);
 
             const tried = new Set();
-            for (const code of candidates) {
+            let matchedNormalizedKey = '';
+            let matchedOriginalKey = '';
+            let url = '';
+
+            for (const code of searchOrder) {
                 if (tried.has(code)) continue;
                 tried.add(code);
-                const url = normalized[code];
-                if (typeof url === 'string' && url.length > 0) {
-                    return url;
+                const candidateUrl = normalized[code];
+                if (typeof candidateUrl === 'string' && candidateUrl.length > 0) {
+                    url = candidateUrl;
+                    matchedNormalizedKey = code;
+                    matchedOriginalKey = normalizedToOriginal[code] || code;
+                    break;
                 }
             }
 
-            return '';
+            const posterSet = new Set();
+            const orderedPosterCandidates = [];
+            if (matchedOriginalKey) registerPosterCandidate(matchedOriginalKey);
+            for (const candidate of posterCandidates) {
+                const clean = String(candidate || '').trim();
+                if (!clean) continue;
+                if (posterSet.has(clean)) continue;
+                posterSet.add(clean);
+                orderedPosterCandidates.push(clean);
+            }
+
+            return {
+                url,
+                matchedNormalizedKey,
+                matchedOriginalKey,
+                posterCandidates: orderedPosterCandidates
+            };
+        }
+
+        function resolveGDriveVideoUrl(preferredLang) {
+            return resolveGDriveVideoMatch(preferredLang).url;
         }
 
         function normalizeGDriveEmbedUrl(rawUrl) {
@@ -917,6 +1019,219 @@
             if (!fileId) return trimmed;
 
             return `https://drive.google.com/file/d/${fileId}/preview`;
+        }
+
+        function stripSgfExtension(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            const withoutExt = raw.replace(/\.sgf$/i, '');
+            const segments = withoutExt.split(/[\\/]/);
+            return segments[segments.length - 1] || '';
+        }
+
+        function buildPosterLangCandidates(lang, match) {
+            const seen = new Set();
+            const result = [];
+
+            function push(code) {
+                const clean = String(code || '').trim();
+                if (!clean || seen.has(clean)) return;
+                seen.add(clean);
+                result.push(clean);
+            }
+
+            function pushNormalizedVariants(code) {
+                const normalized = normalizeLangKey(code);
+                if (!normalized) return;
+                if (!seen.has(normalized)) {
+                    seen.add(normalized);
+                    result.push(normalized);
+                }
+                const parts = normalized.split('-');
+                for (let i = parts.length - 1; i >= 1; i--) {
+                    const partial = parts.slice(0, i).join('-');
+                    if (!seen.has(partial)) {
+                        seen.add(partial);
+                        result.push(partial);
+                    }
+                }
+            }
+
+            if (match && Array.isArray(match.posterCandidates)) {
+                for (const candidate of match.posterCandidates) {
+                    push(candidate);
+                    pushNormalizedVariants(candidate);
+                }
+            }
+
+            push(lang);
+            if (match) {
+                push(match.matchedOriginalKey);
+                push(match.matchedNormalizedKey);
+            }
+
+            pushNormalizedVariants(lang);
+            if (match) {
+                pushNormalizedVariants(match.matchedOriginalKey);
+                pushNormalizedVariants(match.matchedNormalizedKey);
+            }
+
+            return result;
+        }
+
+        function findPosterImage(baseName, langCodes) {
+            return new Promise(resolve => {
+                if (!baseName || !Array.isArray(langCodes) || langCodes.length === 0) {
+                    resolve('');
+                    return;
+                }
+
+                let index = 0;
+
+                function tryNext() {
+                    if (index >= langCodes.length) {
+                        resolve('');
+                        return;
+                    }
+
+                    const code = String(langCodes[index++] || '').trim();
+                    if (!code) {
+                        tryNext();
+                        return;
+                    }
+
+                    const fileName = `${baseName}_[${code}].jpg`;
+                    const img = new Image();
+                    const cleanup = () => {
+                        img.onload = null;
+                        img.onerror = null;
+                        img.onabort = null;
+                    };
+                    img.onload = () => {
+                        cleanup();
+                        resolve(fileName);
+                    };
+                    img.onerror = img.onabort = () => {
+                        cleanup();
+                        tryNext();
+                    };
+                    img.src = fileName;
+                }
+
+                tryNext();
+            });
+        }
+
+        function ensureDriveAutoplayUrl(url) {
+            const trimmed = String(url || '').trim();
+            if (!trimmed) return '';
+            try {
+                const parsed = new URL(trimmed, window.location.href);
+                parsed.searchParams.set('autoplay', '1');
+                return parsed.toString();
+            } catch (err) {
+                if (/[\?&]autoplay=/.test(trimmed)) {
+                    return trimmed.replace(/autoplay=\d+/i, 'autoplay=1');
+                }
+                return trimmed + (trimmed.includes('?') ? '&' : '?') + 'autoplay=1';
+            }
+        }
+
+        async function configureDrivePoster(options) {
+            const { posterEl, iframeEl, videoUrl, lang, match } = options || {};
+
+            clearDrivePosterState(posterEl, iframeEl);
+
+            if (!iframeEl || !videoUrl) {
+                return false;
+            }
+
+            const baseName = stripSgfExtension(SGF_BASENAME);
+            const langCandidates = buildPosterLangCandidates(lang, match);
+
+            if (!posterEl || !baseName) {
+                iframeEl.src = videoUrl;
+                return false;
+            }
+
+            posterEl.style.backgroundImage = '';
+            posterEl.setAttribute('aria-hidden', 'true');
+
+            iframeEl.removeAttribute('src');
+            const posterPath = await findPosterImage(baseName, langCandidates);
+
+            if (!posterPath) {
+                iframeEl.src = videoUrl;
+                return false;
+            }
+
+            posterEl.style.backgroundImage = `url('${posterPath}')`;
+            posterEl.dataset.videoUrl = videoUrl;
+            posterEl.dataset.autoplayUrl = ensureDriveAutoplayUrl(videoUrl);
+            posterEl.removeAttribute('hidden');
+            posterEl.setAttribute('aria-hidden', 'false');
+
+            if (!posterEl.dataset.boundDrivePoster) {
+                posterEl.addEventListener('click', onDrivePosterActivate);
+                posterEl.addEventListener('keydown', onDrivePosterKeydown);
+                posterEl.dataset.boundDrivePoster = '1';
+            }
+
+            iframeEl.dataset.posterReady = '1';
+            return true;
+        }
+
+        function clearDrivePosterState(posterEl, iframeEl) {
+            if (posterEl) {
+                posterEl.setAttribute('hidden', '');
+                posterEl.setAttribute('aria-hidden', 'true');
+                posterEl.style.backgroundImage = '';
+                delete posterEl.dataset.videoUrl;
+                delete posterEl.dataset.autoplayUrl;
+            }
+            if (iframeEl) {
+                delete iframeEl.dataset.posterReady;
+            }
+        }
+
+        function onDrivePosterActivate(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            const posterEl = (event && event.currentTarget) || document.getElementById('gdrive-poster');
+            const iframeEl = document.getElementById('gdrive-frame');
+            if (!posterEl || !iframeEl) return;
+
+            const autoplayUrl = posterEl.dataset.autoplayUrl || posterEl.dataset.videoUrl;
+            if (autoplayUrl && iframeEl.src !== autoplayUrl) {
+                iframeEl.src = autoplayUrl;
+            }
+
+            posterEl.style.backgroundImage = '';
+            clearDrivePosterState(posterEl, iframeEl);
+
+            setTimeout(() => {
+                try {
+                    if (typeof iframeEl.focus === 'function') {
+                        iframeEl.focus({ preventScroll: true });
+                    }
+                } catch (err) {
+                    try {
+                        iframeEl.focus();
+                    } catch (ignore) {
+                        /* noop */
+                    }
+                }
+            }, 0);
+        }
+
+        function onDrivePosterKeydown(event) {
+            if (!event) return;
+            const key = event.key;
+            if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+                event.preventDefault();
+                onDrivePosterActivate(event);
+            }
         }
 
         /* ---------- Ko‑fi isolé dans un iframe ---------- */
@@ -1009,14 +1324,27 @@
 
             const driveWrapper = document.getElementById('gdrive-wrapper');
             const driveFrame = document.getElementById('gdrive-frame');
+            const drivePoster = document.getElementById('gdrive-poster');
             if (driveWrapper && driveFrame) {
-                const rawDriveUrl = resolveGDriveVideoUrl(lang);
-                const normalizedDriveUrl = normalizeGDriveEmbedUrl(rawDriveUrl);
+                const driveMatch = resolveGDriveVideoMatch(lang);
+                const normalizedDriveUrl = normalizeGDriveEmbedUrl(driveMatch.url);
                 if (normalizedDriveUrl) {
-                    driveFrame.src = normalizedDriveUrl;
                     driveWrapper.hidden = false;
                     driveWrapper.setAttribute('aria-hidden', 'false');
+                    if (drivePoster) {
+                        const playLabel = (t.play_video && String(t.play_video).trim()) ||
+                            (lang === 'fr' ? 'Lire la vidéo' : 'Play video');
+                        drivePoster.setAttribute('aria-label', playLabel);
+                    }
+                    await configureDrivePoster({
+                        posterEl: drivePoster,
+                        iframeEl: driveFrame,
+                        videoUrl: normalizedDriveUrl,
+                        lang,
+                        match: driveMatch
+                    });
                 } else {
+                    clearDrivePosterState(drivePoster, driveFrame);
                     driveFrame.removeAttribute('src');
                     driveWrapper.hidden = true;
                     driveWrapper.setAttribute('aria-hidden', 'true');
