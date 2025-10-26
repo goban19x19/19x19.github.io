@@ -1121,6 +1121,19 @@
             });
         }
 
+        function addAutoplayParam(url) {
+            const trimmed = String(url || '').trim();
+            if (!trimmed) return '';
+            try {
+                const parsed = new URL(trimmed, window.location.href);
+                parsed.searchParams.set('autoplay', '1');
+                return parsed.toString();
+            } catch (err) {
+                const sep = trimmed.includes('?') ? '&' : '?';
+                return trimmed + sep + 'autoplay=1';
+            }
+        }
+
         async function configureDrivePoster(options) {
             const { posterEl, iframeEl, videoUrl, lang, match } = options || {};
 
@@ -1133,11 +1146,10 @@
             const baseName = stripSgfExtension(SGF_BASENAME);
             const langCandidates = buildPosterLangCandidates(lang, match);
 
-            if (iframeEl.src !== videoUrl) {
-                iframeEl.src = videoUrl;
-            }
-
             if (!posterEl || !baseName) {
+                if (iframeEl.src !== videoUrl) {
+                    iframeEl.src = videoUrl;
+                }
                 return false;
             }
 
@@ -1147,6 +1159,9 @@
             const posterPath = await findPosterImage(baseName, langCandidates);
 
             if (!posterPath) {
+                if (iframeEl.src !== videoUrl) {
+                    iframeEl.src = videoUrl;
+                }
                 return false;
             }
 
@@ -1166,6 +1181,9 @@
                 posterEl.dataset.boundPosterPointer = '1';
             }
 
+            iframeEl.removeAttribute('src');
+            iframeEl.dataset.drivePreviewUrl = videoUrl;
+
             iframeEl.dataset.posterReady = '1';
             return true;
         }
@@ -1180,6 +1198,8 @@
             }
             if (iframeEl) {
                 delete iframeEl.dataset.posterReady;
+                delete iframeEl.dataset.drivePreviewUrl;
+                delete iframeEl.dataset.driveAutoplayTimer;
             }
         }
 
@@ -1196,8 +1216,37 @@
             }
 
             const previewUrl = posterEl.dataset.videoUrl;
-            if (previewUrl && iframeEl.src !== previewUrl) {
-                iframeEl.src = previewUrl;
+            if (previewUrl) {
+                const autoplayUrl = addAutoplayParam(previewUrl);
+                let didSetUrl = false;
+                if (autoplayUrl && iframeEl.src !== autoplayUrl) {
+                    iframeEl.src = autoplayUrl;
+                    didSetUrl = true;
+                }
+                if (!didSetUrl && iframeEl.src !== previewUrl) {
+                    iframeEl.src = previewUrl;
+                }
+
+                if (didSetUrl) {
+                    const fallbackDelay = 4500;
+                    const fallbackTimer = window.setTimeout(() => {
+                        if (!iframeEl.dataset.driveAutoplayTimer) return;
+                        const current = iframeEl.src || '';
+                        if (!current.includes('autoplay=1')) return;
+                        iframeEl.src = previewUrl;
+                        delete iframeEl.dataset.driveAutoplayTimer;
+                    }, fallbackDelay);
+                    iframeEl.dataset.driveAutoplayTimer = String(fallbackTimer);
+                    const cleanup = () => {
+                        const timerId = Number(iframeEl.dataset.driveAutoplayTimer || 0);
+                        if (timerId) {
+                            clearTimeout(timerId);
+                        }
+                        delete iframeEl.dataset.driveAutoplayTimer;
+                        iframeEl.removeEventListener('load', cleanup);
+                    };
+                    iframeEl.addEventListener('load', cleanup);
+                }
             }
 
             posterEl.style.backgroundImage = '';
@@ -1242,6 +1291,13 @@
             const iframeEl = document.getElementById('gdrive-frame');
             if (!iframeEl) return;
             posterEl.style.pointerEvents = 'none';
+            if (event.pointerId != null && posterEl.releasePointerCapture) {
+                try {
+                    posterEl.releasePointerCapture(event.pointerId);
+                } catch (err) {
+                    /* ignore */
+                }
+            }
             activateDrivePoster({
                 event,
                 allowDefault: true,
