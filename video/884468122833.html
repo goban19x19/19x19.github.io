@@ -163,9 +163,9 @@
             max-width: var(--viewer-max-width);
             margin: 0.75rem auto;
             text-align: center;
-            color: var(--muted);
+            color: #000;
             font-weight: 700;
-            font-size: clamp(0.7rem, 0.4rem + 0.95vw, 1.05rem);
+            font-size: clamp(0.6rem, 0.35rem + 0.8vw, 0.95rem);
             line-height: 1.35;
         }
 
@@ -1438,26 +1438,38 @@
                         : '';
                     const line1Text = (t.google_drive_01 || '').trim();
                     const line2Prefix = (t.google_drive_02 || '').trim();
-                    let line2Text = '';
-                    if (line2Prefix && driveUrlText) {
-                        line2Text = `${line2Prefix} : ${driveUrlText}`;
-                    } else if (line2Prefix) {
-                        line2Text = line2Prefix;
-                    } else if (driveUrlText) {
-                        line2Text = driveUrlText;
-                    }
                     const line3Text = (t.google_drive_03 || '').trim();
                     const line4Text = (t.google_drive_04 || '').trim();
 
                     const topLines = [
                         { el: driveLine1, text: line1Text },
-                        { el: driveLine2, text: line2Text },
+                        { el: driveLine2, text: null },
                         { el: driveLine3, text: line3Text }
                     ];
 
                     let topVisible = false;
                     for (const line of topLines) {
                         if (!line.el) continue;
+                        if (line.el === driveLine2) {
+                            const hasAny = Boolean(line2Prefix || driveUrlText);
+                            line.el.hidden = !hasAny;
+                            line.el.textContent = '';
+                            if (hasAny) {
+                                if (line2Prefix) {
+                                    line.el.append(document.createTextNode(line2Prefix + (driveUrlText ? ' : ' : '')));
+                                }
+                                if (driveUrlText) {
+                                    const a = document.createElement('a');
+                                    a.href = driveUrlText;
+                                    a.target = '_blank';
+                                    a.rel = 'noopener';
+                                    a.textContent = driveUrlText;
+                                    line.el.append(a);
+                                }
+                                topVisible = true;
+                            }
+                            continue;
+                        }
                         const hasText = Boolean(line.text);
                         line.el.textContent = line.text || '';
                         line.el.hidden = !hasText;
