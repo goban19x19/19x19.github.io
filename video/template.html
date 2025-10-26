@@ -1122,21 +1122,6 @@
             });
         }
 
-        function ensureDriveAutoplayUrl(url) {
-            const trimmed = String(url || '').trim();
-            if (!trimmed) return '';
-            try {
-                const parsed = new URL(trimmed, window.location.href);
-                parsed.searchParams.set('autoplay', '1');
-                return parsed.toString();
-            } catch (err) {
-                if (/[\?&]autoplay=/.test(trimmed)) {
-                    return trimmed.replace(/autoplay=\d+/i, 'autoplay=1');
-                }
-                return trimmed + (trimmed.includes('?') ? '&' : '?') + 'autoplay=1';
-            }
-        }
-
         async function configureDrivePoster(options) {
             const { posterEl, iframeEl, videoUrl, lang, match } = options || {};
 
@@ -1149,25 +1134,25 @@
             const baseName = stripSgfExtension(SGF_BASENAME);
             const langCandidates = buildPosterLangCandidates(lang, match);
 
-            if (!posterEl || !baseName) {
+            if (iframeEl.src !== videoUrl) {
                 iframeEl.src = videoUrl;
+            }
+
+            if (!posterEl || !baseName) {
                 return false;
             }
 
             posterEl.style.backgroundImage = '';
             posterEl.setAttribute('aria-hidden', 'true');
 
-            iframeEl.removeAttribute('src');
             const posterPath = await findPosterImage(baseName, langCandidates);
 
             if (!posterPath) {
-                iframeEl.src = videoUrl;
                 return false;
             }
 
             posterEl.style.backgroundImage = `url('${posterPath}')`;
             posterEl.dataset.videoUrl = videoUrl;
-            posterEl.dataset.autoplayUrl = ensureDriveAutoplayUrl(videoUrl);
             posterEl.removeAttribute('hidden');
             posterEl.setAttribute('aria-hidden', 'false');
 
@@ -1187,7 +1172,6 @@
                 posterEl.setAttribute('aria-hidden', 'true');
                 posterEl.style.backgroundImage = '';
                 delete posterEl.dataset.videoUrl;
-                delete posterEl.dataset.autoplayUrl;
             }
             if (iframeEl) {
                 delete iframeEl.dataset.posterReady;
@@ -1202,9 +1186,9 @@
             const iframeEl = document.getElementById('gdrive-frame');
             if (!posterEl || !iframeEl) return;
 
-            const autoplayUrl = posterEl.dataset.autoplayUrl || posterEl.dataset.videoUrl;
-            if (autoplayUrl && iframeEl.src !== autoplayUrl) {
-                iframeEl.src = autoplayUrl;
+            const previewUrl = posterEl.dataset.videoUrl;
+            if (previewUrl && iframeEl.src !== previewUrl) {
+                iframeEl.src = previewUrl;
             }
 
             posterEl.style.backgroundImage = '';
