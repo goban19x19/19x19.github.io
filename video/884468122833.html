@@ -177,8 +177,13 @@
             background-repeat: no-repeat;
             background-color: #000;
             color: #fff;
+            pointer-events: none;
             z-index: 2;
             transition: opacity 0.3s ease;
+        }
+
+        .video-wrapper.poster-visible {
+            cursor: pointer;
         }
 
             .poster-overlay::before {
@@ -1136,8 +1141,9 @@
 
         async function configureDrivePoster(options) {
             const { posterEl, iframeEl, videoUrl, lang, match } = options || {};
+            const wrapperEl = document.getElementById('gdrive-wrapper');
 
-            clearDrivePosterState(posterEl, iframeEl);
+            clearDrivePosterState(posterEl, iframeEl, { wrapperEl });
 
             if (!iframeEl || !videoUrl) {
                 return false;
@@ -1146,10 +1152,11 @@
             const baseName = stripSgfExtension(SGF_BASENAME);
             const langCandidates = buildPosterLangCandidates(lang, match);
 
+            if (iframeEl.src !== videoUrl) {
+                iframeEl.src = videoUrl;
+            }
+
             if (!posterEl || !baseName) {
-                if (iframeEl.src !== videoUrl) {
-                    iframeEl.src = videoUrl;
-                }
                 return false;
             }
 
@@ -1159,9 +1166,6 @@
             const posterPath = await findPosterImage(baseName, langCandidates);
 
             if (!posterPath) {
-                if (iframeEl.src !== videoUrl) {
-                    iframeEl.src = videoUrl;
-                }
                 return false;
             }
 
@@ -1169,6 +1173,9 @@
             posterEl.dataset.videoUrl = videoUrl;
             posterEl.removeAttribute('hidden');
             posterEl.setAttribute('aria-hidden', 'false');
+            if (wrapperEl) {
+                wrapperEl.classList.add('poster-visible');
+            }
 
             if (!posterEl.dataset.boundDrivePoster) {
                 posterEl.addEventListener('click', onDrivePosterActivate);
@@ -1176,30 +1183,36 @@
                 posterEl.dataset.boundDrivePoster = '1';
             }
 
-            if (!posterEl.dataset.boundPosterPointer) {
-                posterEl.addEventListener('pointerdown', onDrivePosterPointerDown);
-                posterEl.dataset.boundPosterPointer = '1';
+            if (!iframeEl.dataset.boundDriveFocus) {
+                iframeEl.addEventListener('focus', onDriveIframeFocus, true);
+                iframeEl.dataset.boundDriveFocus = '1';
             }
-
-            iframeEl.removeAttribute('src');
-            iframeEl.dataset.drivePreviewUrl = videoUrl;
 
             iframeEl.dataset.posterReady = '1';
             return true;
         }
 
-        function clearDrivePosterState(posterEl, iframeEl) {
+        function clearDrivePosterState(posterEl, iframeEl, options) {
+            const opts = options || {};
+            const wrapperEl = opts.wrapperEl || document.getElementById('gdrive-wrapper');
             if (posterEl) {
                 posterEl.setAttribute('hidden', '');
                 posterEl.setAttribute('aria-hidden', 'true');
                 posterEl.style.backgroundImage = '';
                 delete posterEl.dataset.videoUrl;
-                posterEl.style.pointerEvents = '';
             }
             if (iframeEl) {
+                if (!opts.keepAutoplayTimer) {
+                    const timerId = Number(iframeEl.dataset.driveAutoplayTimer || 0);
+                    if (timerId) {
+                        clearTimeout(timerId);
+                    }
+                    delete iframeEl.dataset.driveAutoplayTimer;
+                }
                 delete iframeEl.dataset.posterReady;
-                delete iframeEl.dataset.drivePreviewUrl;
-                delete iframeEl.dataset.driveAutoplayTimer;
+            }
+            if (wrapperEl) {
+                wrapperEl.classList.remove('poster-visible');
             }
         }
 
@@ -1209,6 +1222,8 @@
             const allowDefault = !!opts.allowDefault;
             const posterEl = opts.posterEl || document.getElementById('gdrive-poster');
             const iframeEl = opts.iframeEl || document.getElementById('gdrive-frame');
+            const trigger = opts.trigger || '';
+            const wrapperEl = opts.wrapperEl || document.getElementById('gdrive-wrapper');
             if (!posterEl || !iframeEl || posterEl.hidden) return;
 
             if (!allowDefault && event) {
@@ -1216,7 +1231,7 @@
             }
 
             const previewUrl = posterEl.dataset.videoUrl;
-            if (previewUrl) {
+            if (previewUrl && trigger === 'keyboard') {
                 const autoplayUrl = addAutoplayParam(previewUrl);
                 let didSetUrl = false;
                 if (autoplayUrl && iframeEl.src !== autoplayUrl) {
@@ -1250,7 +1265,10 @@
             }
 
             posterEl.style.backgroundImage = '';
-            clearDrivePosterState(posterEl, iframeEl);
+            const clearOpts = (trigger === 'keyboard')
+                ? { keepAutoplayTimer: true, wrapperEl }
+                : { wrapperEl };
+            clearDrivePosterState(posterEl, iframeEl, clearOpts);
 
             setTimeout(() => {
                 try {
@@ -1270,8 +1288,9 @@
         function onDrivePosterActivate(event) {
             const posterEl = (event && event.currentTarget) || document.getElementById('gdrive-poster');
             const iframeEl = document.getElementById('gdrive-frame');
+            const wrapperEl = document.getElementById('gdrive-wrapper');
             if (!posterEl || !iframeEl) return;
-            activateDrivePoster({ event, posterEl, iframeEl });
+            activateDrivePoster({ event, posterEl, iframeEl, wrapperEl });
         }
 
         function onDrivePosterKeydown(event) {
@@ -1279,31 +1298,17 @@
             const key = event.key;
             if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
                 event.preventDefault();
-                activateDrivePoster({ event });
+                const wrapperEl = document.getElementById('gdrive-wrapper');
+                activateDrivePoster({ event, trigger: 'keyboard', wrapperEl });
             }
         }
 
-        function onDrivePosterPointerDown(event) {
-            if (!event || event.defaultPrevented) return;
-            if (typeof event.button === 'number' && event.button !== 0) return;
-            const posterEl = event.currentTarget || document.getElementById('gdrive-poster');
-            if (!posterEl || posterEl.hidden) return;
+        function onDriveIframeFocus() {
+            const posterEl = document.getElementById('gdrive-poster');
             const iframeEl = document.getElementById('gdrive-frame');
-            if (!iframeEl) return;
-            posterEl.style.pointerEvents = 'none';
-            if (event.pointerId != null && posterEl.releasePointerCapture) {
-                try {
-                    posterEl.releasePointerCapture(event.pointerId);
-                } catch (err) {
-                    /* ignore */
-                }
-            }
-            activateDrivePoster({
-                event,
-                allowDefault: true,
-                posterEl,
-                iframeEl
-            });
+            if (!posterEl || posterEl.hidden) return;
+            const wrapperEl = document.getElementById('gdrive-wrapper');
+            activateDrivePoster({ allowDefault: true, posterEl, iframeEl, wrapperEl, trigger: 'focus' });
         }
 
         /* ---------- Ko‑fi isolé dans un iframe ---------- */
@@ -1416,7 +1421,7 @@
                         match: driveMatch
                     });
                 } else {
-                    clearDrivePosterState(drivePoster, driveFrame);
+                    clearDrivePosterState(drivePoster, driveFrame, { wrapperEl: driveWrapper });
                     driveFrame.removeAttribute('src');
                     driveWrapper.hidden = true;
                     driveWrapper.setAttribute('aria-hidden', 'true');
