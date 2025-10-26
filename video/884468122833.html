@@ -573,7 +573,7 @@
             "zh-HK": "__zh-HK__",
             "ja": "__ja__",
             "ko": "__ko__",
-            "en": "https://drive.google.com/file/d/11c-32E4UFRgysQtbUtTFVnwoMnFhYIqQ/view?usp=drive_link",
+            "en": "https://drive.google.com/file/d/1rjLjOQheDDajmo-x-YnUr3StbHUBrzya/view?usp=drivesdk",
             "ru": "__ru__",
             "de": "__de__",
             "pl": "__pl__",
@@ -583,7 +583,7 @@
             "es": "__es__",
             "pt": "__pt__",
             "pt-PT": "__pt-PT__",
-            "it": "https://drive.google.com/file/d/1CY1mEYwDC6cvq5TMtN5bNSDOp78CVqSK/view?usp=drivesdk",
+            "it": "https://drive.google.com/file/d/15qGjs99eaj8XVgKNxl0eYf8xuvXgfKGI/view?usp=drivesdk",
             "nl": "__nl__",
             "hu": "__hu__",
             "ro": "__ro__",
@@ -1122,21 +1122,6 @@
             });
         }
 
-        function ensureDriveAutoplayUrl(url) {
-            const trimmed = String(url || '').trim();
-            if (!trimmed) return '';
-            try {
-                const parsed = new URL(trimmed, window.location.href);
-                parsed.searchParams.set('autoplay', '1');
-                return parsed.toString();
-            } catch (err) {
-                if (/[\?&]autoplay=/.test(trimmed)) {
-                    return trimmed.replace(/autoplay=\d+/i, 'autoplay=1');
-                }
-                return trimmed + (trimmed.includes('?') ? '&' : '?') + 'autoplay=1';
-            }
-        }
-
         async function configureDrivePoster(options) {
             const { posterEl, iframeEl, videoUrl, lang, match } = options || {};
 
@@ -1167,7 +1152,6 @@
 
             posterEl.style.backgroundImage = `url('${posterPath}')`;
             posterEl.dataset.videoUrl = videoUrl;
-            posterEl.dataset.autoplayUrl = ensureDriveAutoplayUrl(videoUrl);
             posterEl.removeAttribute('hidden');
             posterEl.setAttribute('aria-hidden', 'false');
 
@@ -1187,7 +1171,6 @@
                 posterEl.setAttribute('aria-hidden', 'true');
                 posterEl.style.backgroundImage = '';
                 delete posterEl.dataset.videoUrl;
-                delete posterEl.dataset.autoplayUrl;
             }
             if (iframeEl) {
                 delete iframeEl.dataset.posterReady;
@@ -1202,9 +1185,9 @@
             const iframeEl = document.getElementById('gdrive-frame');
             if (!posterEl || !iframeEl) return;
 
-            const autoplayUrl = posterEl.dataset.autoplayUrl || posterEl.dataset.videoUrl;
-            if (autoplayUrl && iframeEl.src !== autoplayUrl) {
-                iframeEl.src = autoplayUrl;
+            const previewUrl = posterEl.dataset.videoUrl;
+            if (previewUrl && iframeEl.src !== previewUrl) {
+                iframeEl.src = previewUrl;
             }
 
             posterEl.style.backgroundImage = '';
@@ -1396,6 +1379,4 @@
     </script>
 </body>
 </html>
-
-
 
