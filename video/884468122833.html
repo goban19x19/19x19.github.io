@@ -1308,23 +1308,22 @@
         }
 
         function onDriveIframeFocus() {
-            const posterEl = document.getElementById('gdrive-poster');
+    const posterEl = document.getElementById('gdrive-poster');
+    const iframeEl = document.getElementById('gdrive-frame');
+    if (!posterEl || posterEl.hidden) return;
+    const wrapperEl = document.getElementById('gdrive-wrapper');
+    activateDrivePoster({ allowDefault: true, posterEl, iframeEl, wrapperEl, trigger: 'focus' });
+}
 
-        function onDriveWrapperPointerDown(event) {
-            if (!event || event.defaultPrevented) return;
-            if (typeof event.button === 'number' && event.button !== 0) return;
-            const wrapperEl = event.currentTarget || document.getElementById('gdrive-wrapper');
-            const posterEl = document.getElementById('gdrive-poster');
-            const iframeEl = document.getElementById('gdrive-frame');
-            if (!posterEl || posterEl.hidden || !iframeEl) return;
-            activateDrivePoster({ event, allowDefault: true, posterEl, iframeEl, wrapperEl, trigger: 'pointer' });
-        }
-
-            const iframeEl = document.getElementById('gdrive-frame');
-            if (!posterEl || posterEl.hidden) return;
-            const wrapperEl = document.getElementById('gdrive-wrapper');
-            activateDrivePoster({ allowDefault: true, posterEl, iframeEl, wrapperEl, trigger: 'focus' });
-        }
+function onDriveWrapperPointerDown(event) {
+    if (!event || event.defaultPrevented) return;
+    if (typeof event.button === 'number' && event.button !== 0) return;
+    const wrapperEl = event.currentTarget || document.getElementById('gdrive-wrapper');
+    const posterEl = document.getElementById('gdrive-poster');
+    const iframeEl = document.getElementById('gdrive-frame');
+    if (!posterEl || posterEl.hidden || !iframeEl) return;
+    activateDrivePoster({ event, allowDefault: true, posterEl, iframeEl, wrapperEl, trigger: 'pointer' });
+}
 
         /* ---------- Ko‑fi isolé dans un iframe ---------- */
         function renderKoFiIsolated(labelText) {
@@ -1488,6 +1487,10 @@
     </script>
 </body>
 </html>
+
+
+
+
 
 
 
