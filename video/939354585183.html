@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>19x19 — Partie commentée</title>
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="../ressources/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../ressources/favicon-16.png" />
+    <link rel="apple-touch-icon" href="../ressources/apple-touch-icon.png" />
+
+    <!-- BesoGo CSS (board-wood included for wood theme) -->
+    <link rel="stylesheet" href="../vendor/besogo/css/besogo.css" />
+    <link rel="stylesheet" href="../vendor/besogo/css/board-wood.css" />
+
+    <style>
+        :root {
+            --max-page-width: 1200px;
+            --accent-color: #111;
+            --muted: #666;
+            --divider-color: rgba(0,0,0,0.08);
+            /* largeur commune pour viewer (video + éditeur) */
+            --viewer-max-width: clamp(360px, 80vw, 1100px);
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+            color: var(--accent-color);
+            background-color: #f5d97a;
+            background-image: url("../ressources/background.webp");
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* HEADER : flex responsive, bascule en colonne si nécessaire */
+        header.page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: var(--max-page-width);
+            margin: 0 auto;
+            padding: 0.75rem 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Left logo: proportionnel à la largeur du conteneur sur desktop */
+        .logo-left {
+            flex: 0 0 40%; /* prend environ 40% de l'espace header sur écran large */
+            min-width: 180px; /* évite logo trop petit */
+            box-sizing: border-box;
+        }
+
+            .logo-left img {
+                width: 100%;
+                max-width: 600px; /* sécurité sur très grand écran */
+                height: auto;
+                display: block;
+            }
+
+        /* Top-right : s'adapte, peut rétrécir */
+        .top-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            text-align: right;
+            gap: .25rem;
+            color: var(--muted);
+            flex: 1 1 55%;
+            min-width: 220px;
+            box-sizing: border-box;
+        }
+
+            /* container for the two-line title */
+            .top-right #title-top {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: .12rem;
+                margin: 0;
+                padding: 0;
+                line-height: 1;
+            }
+
+            /* 1) prefix: small and muted (same tone as links) */
+            .top-right .title-prefix {
+                font-size: clamp(0.65rem, 0.4rem + 1.0vw, 0.95rem);
+                font-weight: 700;
+                color: var(--muted);
+            }
+
+            /* 2) main title (NAME) : same weight/size/color as previous large title */
+            .top-right .title-main {
+                font-size: clamp(1.0rem, 0.9rem + 1.4vw, 1.4rem);
+                font-weight: 800;
+                color: #000;
+            }
+
+            /* links in top-right (general) are muted; ensure wrapping */
+            .top-right a {
+                color: var(--muted);
+                text-decoration: none;
+                font-weight: 700;
+                font-size: clamp(0.7rem, 0.4rem + 0.95vw, 1.05rem);
+                line-height: 1.2;
+                word-break: break-word;
+                display: block;
+                max-width: 100%;
+            }
+
+        /* specific: SGF link should be black as requested */
+        #link-sgf {
+            color: #000 !important;
+        }
+
+        /* Container principal */
+        .container {
+            max-width: var(--max-page-width);
+            margin: 0 auto;
+            padding: 0 1rem 2rem;
+        }
+
+        /* viewer-wrapper contrôle la largeur commune de la vidéo et de l'éditeur */
+        .viewer-wrapper {
+            margin: 0.6rem auto 1rem; /* réduit l'espace entre header et vidéo sur mobile */
+            width: 100%;
+            max-width: var(--viewer-max-width);
+            box-sizing: border-box;
+        }
+
+        /* Cadre Besogo (éditeur) */
+        .viewer-box {
+            background: rgba(255,255,255,0.95);
+            border-radius: 6px;
+            padding: 10px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+            min-height: 360px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Vidéo : placée au-dessus, même largeur que viewer-box */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 0 0 0.8rem 0;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        }
+
+        .gdrive-copy {
+            max-width: var(--viewer-max-width);
+            margin: 0.75rem auto;
+            text-align: center;
+            color: #000;
+            font-weight: 700;
+            font-size: clamp(0.6rem, 0.35rem + 0.8vw, 0.95rem);
+            line-height: 1.35;
+        }
+
+        .gdrive-copy .gdrive-line {
+            margin: 0.15rem 0;
+        }
+
+            .video-wrapper iframe {
+                width: 100%;
+                height: 100%;
+                border: 0;
+                display: block;
+            }
+
+        .poster-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-color: #000;
+            color: #fff;
+            cursor: pointer;
+            z-index: 2;
+            transition: opacity 0.3s ease;
+        }
+
+            .poster-overlay::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.35);
+            }
+
+            .poster-overlay .poster-play-icon {
+                position: relative;
+                width: clamp(64px, 12vw, 96px);
+                aspect-ratio: 1;
+                border-radius: 50%;
+                background: rgba(0, 0, 0, 0.55);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+                .poster-overlay .poster-play-icon::before {
+                    content: "";
+                    position: absolute;
+                    top: 50%;
+                    left: 52%;
+                    width: 38%;
+                    height: 38%;
+                    background: rgba(255, 255, 255, 0.92);
+                    clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+                    transform: translate(-50%, -50%);
+                }
+
+            .poster-overlay:focus-visible {
+                outline: 3px solid rgba(255, 255, 255, 0.8);
+                outline-offset: 4px;
+            }
+
+            .poster-overlay:not([hidden]) {
+                display: flex;
+            }
+
+        /* FOOTER : logo à gauche, ko-fi juste à droite, crédits en bas */
+        footer.site-footer {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 1rem 0;
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .footer-inner {
+            max-width: var(--max-page-width);
+            margin: 0 auto;
+            padding: 0 1rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* NEW: home button row (placed above footer-top) */
+        .home-row {
+            display: flex;
+            justify-content: left; /* centered on desktop, will adjust on mobile */
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .home-btn {
+            display: inline-block;
+            background: rgba(255,255,255,0.3);
+            color: #000;
+            padding: 8px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.06);
+            line-height: 1.1;
+            text-align: center;
+        }
+
+        /* allow wrapping in the footer top to avoid overflow */
+        .footer-top {
+            display: flex;
+            flex-wrap: wrap; /* allow break to next line when space lacks */
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: flex-start; /* logo à gauche */
+            flex: 1 1 320px; /* grow/shrink, base 320px */
+            min-width: 0; /* allow children to shrink properly */
+            box-sizing: border-box;
+        }
+
+        /* logo responsive and never overflow its container */
+        #site-logo {
+            width: clamp(120px, 18vw, 320px);
+            max-width: 100%;
+            height: auto;
+            display: block;
+            opacity: .95;
+        }
+
+        /* ko-fi widget: flexible and allow text to wrap to two lines */
+        .kofi-widget {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            max-width: 340px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+            .kofi-widget a.kofi-fallback {
+                display: inline-block;
+                max-width: 100%;
+                white-space: normal; /* allow wrapping */
+                word-break: break-word; /* break if needed */
+                text-align: center;
+                line-height: 1.05;
+            }
+
+            /* ensure iframe inside the widget is fluid and limited */
+            .kofi-widget iframe {
+                width: 100%;
+                max-width: 340px;
+                height: 70px;
+                border: 0;
+                min-width: 0;
+            }
+
+            .kofi-widget > * {
+                transform-origin: center center;
+            }
+
+        .footer-right {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            color: var(--muted);
+            font-size: 0.95rem;
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+
+        .credits {
+            margin-top: 4px;
+            font-size: 0.78rem;
+            color: var(--muted);
+            line-height: 1.25;
+            text-align: left; /* default left alignment */
+        }
+
+        /* SMALL SCREENS : empilement et ajustements */
+        @media (max-width: 760px) {
+            header.page-header {
+                flex-direction: column;
+                /* keep header items stacked but keep texts right-aligned as requested */
+                align-items: flex-end; /* keep items aligned to the right edge */
+                text-align: right;
+                padding: 0.6rem 0.75rem;
+                gap: 0.4rem;
+            }
+
+            .logo-left {
+                flex: 0 0 auto;
+                min-width: 0;
+                order: 0;
+                width: 100%;
+                box-sizing: border-box;
+                display: flex;
+                justify-content: flex-end; /* logo positioned at right to match header alignment */
+            }
+
+                .logo-left img {
+                    /* keep logo visible but not overflowing; right-aligned container */
+                    width: clamp(120px, 60vw, 400px);
+                    max-width: 100%;
+                    height: auto;
+                }
+
+            .top-right {
+                align-items: flex-end; /* align links/texts to the right as requested */
+                text-align: right;
+                flex: 1 1 auto;
+                min-width: 0;
+                order: 1;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+                /* prefix small on mobile */
+                .top-right .title-prefix {
+                    font-size: clamp(0.75rem, 2.5vw, 0.9rem);
+                }
+
+                /* name slightly reduced on mobile */
+                .top-right .title-main {
+                    font-size: clamp(1.0rem, 4.0vw, 1.2rem);
+                }
+
+                .top-right a {
+                    font-size: clamp(0.8rem, 2.75vw, 0.9rem);
+                    /* ensure right alignment and wrapping */
+                    text-align: right;
+                }
+
+            /* réduire l'espace entre le bloc header et la vidéo (corrige l'espace vide A) */
+            .viewer-wrapper {
+                margin-top: 0.4rem;
+            }
+
+            .viewer-box {
+                min-height: 240px;
+                padding: 8px;
+            }
+
+            /* HOME BUTTON: place it centered (or adjust) above footer-top.
+               On mobile we'll center it and make it take up most width. */
+            .home-row {
+                justify-content: left;
+            }
+
+            .home-btn {
+                width: 40%;
+                max-width: 420px;
+                padding: 10px 14px;
+                border-radius: 10px;
+                font-size: 0.85rem;
+            }
+
+            /* FOOTER: force a two-line layout when necessary to avoid truncation.
+               .footer-top already allows wrapping; on small screens make left and ko-fi
+               occupy full width each so the logo can't be pushed out. */
+            .footer-top {
+                justify-content: center;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .footer-left {
+                flex-basis: 100%;
+                justify-content: center; /* center both logo and ko-fi horizontally */
+                gap: 10px;
+            }
+
+            .kofi-widget {
+                flex-basis: 100%;
+                justify-content: center;
+                max-width: 80%;
+            }
+
+                /* reduce ko-fi widget scale slightly on small screens */
+                .kofi-widget > * {
+                    transform: scale(0.9);
+                }
+
+            /* 1/ increase slightly the bottom logo on mobile as requested */
+            #site-logo {
+                width: clamp(110px, 46vw, 240px);
+                max-width: 100%;
+            }
+
+            /* 2/ reduce size of credits/licences on mobile */
+            .credits {
+                text-align: left;
+                width: 100%;
+                box-sizing: border-box;
+                padding-left: 1.0rem; /* keep a little inset from the page edge */
+                font-size: 0.66rem; /* reduced from 0.78rem */
+            }
+
+            .footer-right {
+                justify-content: center;
+            }
+        }
+
+        /* VERY LARGE SCREENS : éviter que certains éléments deviennent trop petits par erreur */
+        @media (min-width: 2000px) {
+            .logo-left img {
+                max-width: 720px;
+            }
+
+            #site-logo {
+                max-width: 420px;
+            }
+
+            .top-right .title-main {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header" role="banner" aria-label="En-tête">
+
+        <div class="logo-left">
+            <a href="https://19x19.win" aria-label="Accueil 19x19" title="Accueil 19x19">
+                <img id="page-logo" src="../ressources/logo.svg" alt="19x19" loading="eager" />
+            </a>
+        </div>
+
+        <div class="top-right" aria-label="informations">
+            <!-- Deux lignes : prefix (muted) puis titre principal (NAME) -->
+            <div id="title-top" aria-hidden="false">
+                <div id="title-prefix" class="title-prefix">Partie commentée dans la vidéo</div>
+                <div id="title-main" class="title-main"></div>
+            </div>
+
+            <div><a id="link-youtube" href="#" target="_blank" rel="noopener">Lien Youtube</a></div>
+            <div><a id="link-sgf" href="#" download>Fichier SGF</a></div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="viewer-wrapper">
+            <!-- Vidéo au-dessus de Besogo -->
+            <div id="gdrive-text-top" class="gdrive-copy" aria-hidden="true" hidden>
+                <p id="gdrive-line-1" class="gdrive-line" hidden></p>
+                <p id="gdrive-line-2" class="gdrive-line" hidden></p>
+                <p id="gdrive-line-3" class="gdrive-line" hidden></p>
+            </div>
+            <div id="gdrive-wrapper" class="video-wrapper" aria-label="Vidéo Google Drive" aria-hidden="true" hidden>
+                <div id="gdrive-poster" class="poster-overlay" role="button" tabindex="0" aria-label="Play video" hidden>
+                    <span class="poster-play-icon" aria-hidden="true"></span>
+                </div>
+                <iframe id="gdrive-frame" title="Google Drive" allow="autoplay; fullscreen" allowfullscreen tabindex="-1"></iframe>
+            </div>
+            <div id="gdrive-text-bottom" class="gdrive-copy" aria-hidden="true" hidden>
+                <p id="gdrive-line-4" class="gdrive-line" hidden></p>
+            </div>
+            <div class="video-wrapper" aria-label="Vidéo commentée">
+                <iframe id="yt-frame" title="YouTube" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+
+            <div id="besogo-container" class="viewer-box" aria-label="Éditeur SGF"></div>
+        </div>
+    </div>
+
+    <footer class="site-footer" role="contentinfo" aria-label="Pied de page">
+        <div class="footer-inner">
+
+            <!-- 3/ NEW: bouton "page d'accueil" (texte traduit via translation.tsv -> colonne home_page) -->
+            <div class="home-row">
+                <a id="home-page-btn" class="home-btn" href="https://19x19.win" title="Accueil 19x19">Accueil</a>
+            </div>
+
+            <div class="footer-top">
+                <div class="footer-left">
+                    <a href="https://19x19.win" aria-label="Accueil 19x19" title="Accueil 19x19">
+                        <img id="site-logo" src="../ressources/logo.svg" alt="Goban 19x19 - logo" loading="eager" />
+                    </a>
+                    <div class="kofi-widget" id="kofi-widget-container">
+                        <a id="kofi-link" class="kofi-fallback" href="https://ko-fi.com/19x19" target="_blank" rel="noopener">Me soutenir<br />financièrement</a>
+                        <iframe id="kofi-iframe" title="Ko‑fi" style="border:0; width:100%; height:70px; overflow:hidden; background:transparent;" loading="lazy"></iframe>
+                        <noscript><a href="https://ko-fi.com/19x19" target="_blank" rel="noopener">Me soutenir financièrement</a></noscript>
+                    </div>
+                </div>
+
+                <div class="footer-right" aria-hidden="true">
+                    <!-- optionnel : on peut mettre ici un petit lien ou laisser vide -->
+                </div>
+            </div>
+
+            <div class="credits" aria-hidden="false">
+                <small>1/ Copyright and Credits</small><br />
+                <small>2/ Code copyright Ye Wang, MIT License</small><br />
+                <small>3/ Realistic stone textures copyright Andreas Tarnowsky, CC-BY-SA 4.0</small><br />
+                <small>4/ Realistic board textures copyright and courtesy of tozgrec (OGS user).</small><br />
+                <small>5/ Realistic board textures copyright Joonas Pihlajamaa, CC-BY-NC 4.0</small><br />
+                <small>6/ Katago Copyright David J Wu (lightvector)</small>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Remplace ces constantes par ton script (ou par tokens)
+        const NAME = "Commentaire\ de\ partie\ de\ jeu\ de\ go";
+        const VIDEO_TITLE = {
+            "zh-CN": "%%zh-CN%%",
+            "zh-Hans": "%%zh-Hans%%",
+            "zh-TW": "%%zh-TW%%",
+            "zh-Hant": "%%zh-Hant%%",
+            "zh-HK": "%%zh-HK%%",
+            "ja": "%%ja%%",
+            "ko": "%%ko%%",
+            "en": "%%en%%",
+            "ru": "%%ru%%",
+            "de": "%%de%%",
+            "pl": "%%pl%%",
+            "cs": "%%cs%%",
+            "uk": "%%uk%%",
+            "es-ES": "%%es-ES%%",
+            "es": "#321 - Vocabulario italiano",
+            "pt": "%%pt%%",
+            "pt-PT": "%%pt-PT%%",
+            "it": "%%it%%",
+            "nl": "%%nl%%",
+            "hu": "%%hu%%",
+            "ro": "%%ro%%",
+            "tr": "%%tr%%",
+            "vi": "%%vi%%",
+            "id": "%%id%%",
+            "th": "%%th%%",
+            "he": "%%he%%",
+            "ar": "%%ar%%",
+            "fa": "%%fa%%",
+            "sv": "%%sv%%",
+            "fi": "%%fi%%",
+            "el": "%%el%%",
+            "sr": "%%sr%%",
+            "hr": "%%hr%%",
+            "bs": "%%bs%%",
+            "bg": "%%bg%%",
+            "da": "%%da%%",
+            "fr": "#321 - Vocabulaire italien"
+        };
+        const SGF_BASENAME = "939354585183.sgf";
+        // const SGF_BASENAME_NOEXT = "__SGF_BASENAME_NOEXT__"; // without extension, e.g. "00001"
+        const YT_URL = "https://youtu.be/MOCK-135-20251116095035";
+        const DRIVE_URL = "";
+        // Google Drive video URLs by locale (populated by an external script)
+        const GDRIVE_VIDEO_URLS = {
+            "zh-CN": "__zh-CN__",
+            "zh-Hans": "__zh-Hans__",
+            "zh-TW": "__zh-TW__",
+            "zh-Hant": "__zh-Hant__",
+            "zh-HK": "__zh-HK__",
+            "ja": "__ja__",
+            "ko": "__ko__",
+            "en": "__en__",
+            "ru": "__ru__",
+            "de": "__de__",
+            "pl": "__pl__",
+            "cs": "__cs__",
+            "uk": "__uk__",
+            "es-ES": "__es-ES__",
+            "es": "https://drive.google.com/file/d/mock_es_4993918/view",
+            "pt": "__pt__",
+            "pt-PT": "__pt-PT__",
+            "it": "__it__",
+            "nl": "__nl__",
+            "hu": "__hu__",
+            "ro": "__ro__",
+            "tr": "__tr__",
+            "vi": "__vi__",
+            "id": "__id__",
+            "th": "__th__",
+            "he": "__he__",
+            "ar": "__ar__",
+            "fa": "__fa__",
+            "sv": "__sv__",
+            "fi": "__fi__",
+            "el": "__el__",
+            "sr": "__sr__",
+            "hr": "__hr__",
+            "bs": "__bs__",
+            "bg": "__bg__",
+            "da": "__da__",
+            "fr": ""
+        };
+        function isPlaceholderString(value) {
+            if (typeof value !== "string") return false;
+            const trimmed = value.trim();
+            return /^__[a-z0-9_-]+__$/i.test(trimmed) || /^%%[a-z0-9_-]+%%$/i.test(trimmed);
+        }
+
+        const RAW_IS_KATAGO = true;
+        const IS_KATAGO = (typeof RAW_IS_KATAGO === "boolean") ? RAW_IS_KATAGO : false;
+    </script>
+
+    <script>
+        const BESOGO_BUNDLES = [
+            "../vendor/besogo/besogo.all.js",
+            "../vendor/besogo/besogo.min.js",
+            "../vendor/besogo/js/besogo.all.js",
+            "../vendor/besogo/js/besogo.min.js",
+            "../vendor/besogo/js/besogo-all.js",
+            "../vendor/besogo/js/besogo-all.min.js",
+            "../vendor/besogo/js/besogo.min.js",
+            "../vendor/besogo/js/besogo.js"
+        ];
+
+        function loadScript(url) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = url;
+                s.async = false;
+                s.onload = () => resolve(url);
+                s.onerror = () => reject(new Error('Failed to load ' + url));
+                document.head.appendChild(s);
+            });
+        }
+
+        function createEditorDivWithAttrs(sgfUrl) {
+            const container = document.getElementById('besogo-container');
+            if (!container) return null;
+            while (container.firstChild) container.removeChild(container.firstChild);
+
+            const d = document.createElement('div');
+            d.className = 'besogo-editor';
+
+            // classic/full viewer
+            d.setAttribute('panels', 'control+names+comment+tool+tree+file');
+            d.setAttribute('tool', 'auto');
+            d.setAttribute('theme', 'wood');
+            d.setAttribute('realstones', 'on');
+            d.setAttribute('coord', 'western');
+
+            d.setAttribute('sgf', sgfUrl);
+            d.setAttribute('data-sgf', sgfUrl);
+
+            container.appendChild(d);
+            return d;
+        }
+
+        async function tryLoadBundleAndInit() {
+            let loaded = null;
+            for (const p of BESOGO_BUNDLES) {
+                try {
+                    await loadScript(p);
+                    console.log("Loaded besogo bundle:", p);
+                    loaded = p;
+                    break;
+                } catch (e) {
+                    console.log("bundle not found:", p);
+                }
+            }
+            if (!loaded) {
+                document.getElementById('besogo-container').innerHTML = "<div style='color:#900;padding:1rem'>Erreur: Bundles BesoGo introuvables. Place le bundle dans vendor/besogo/.</div>";
+                return;
+            }
+
+            // Patch to point stone images to vendor/besogo/img/
+            (function patchRealStoneImgPath() {
+                try {
+                    const IMG_PREFIX = window.location.origin + '/vendor/besogo/img/';
+                    if (window.besogo && typeof window.besogo.realStone === 'function') {
+                        const orig = window.besogo.realStone;
+                        window.besogo.realStone = function (x, y, color, index) {
+                            const el = orig(x, y, color, index);
+                            try {
+                                const ns = 'http://www.w3.org/1999/xlink';
+                                let old = null;
+                                if (el.getAttributeNS) {
+                                    old = el.getAttributeNS(ns, 'href') || el.getAttribute('href');
+                                } else {
+                                    old = el.getAttribute('href');
+                                }
+                                if (old && old.indexOf('img/') === 0) {
+                                    const name = old.replace(/^img\//, '');
+                                    const newHref = IMG_PREFIX + name;
+                                    if (el.setAttributeNS) el.setAttributeNS(ns, 'href', newHref);
+                                    el.setAttribute('href', newHref);
+                                }
+                            } catch (err) {
+                                console.warn('realStone patch error', err);
+                            }
+                            return el;
+                        };
+                        console.log('Patched besogo.realStone to use vendor image path.');
+                    }
+                } catch (e) {
+                    console.warn('Failed to patch besogo.realStone:', e);
+                }
+            })();
+
+            const sgfAbs = new URL(SGF_BASENAME.replace(/^\/+/, ''), window.location.href).href;
+
+            createEditorDivWithAttrs(sgfAbs);
+
+            if (window.besogo && typeof window.besogo.autoInit === 'function') {
+                try {
+                    window.besogo.autoInit();
+                    console.log("called besogo.autoInit()");
+                    setTimeout(() => fallbackExplicitCreate(sgfAbs), 300);
+                    return;
+                } catch (e) {
+                    console.warn("besogo.autoInit threw:", e);
+                }
+            }
+
+            try {
+                const container = document.getElementById('besogo-container');
+                if (window.besogo && typeof window.besogo.create === 'function') {
+                    window.besogo.create(container, {
+                        sgf: sgfAbs,
+                        readOnly: false,
+                        panels: 'control+names+comment+tool+tree+file',
+                        tool: 'auto',
+                        theme: 'wood',
+                        realstones: true,
+                        coord: 'western'
+                    });
+                    console.log("called besogo.create() explicit for classic viewer");
+                } else {
+                    console.error("besogo.create not available");
+                    container.innerHTML = "<div style='color:#900;padding:1rem'>Erreur: BesoGo chargé mais méthode d'initialisation introuvable.</div>";
+                }
+            } catch (err) {
+                console.error("Erreur initialisation BesoGo explicit:", err);
+                document.getElementById('besogo-container').innerHTML = "<div style='color:#900;padding:1rem'>Erreur lors de l'initialisation. Voir la console pour les détails.</div>";
+            }
+        }
+
+        function fallbackExplicitCreate(sgfAbs) {
+            const container = document.getElementById('besogo-container');
+            if (!container) return;
+            const hasBoard = container.querySelector('.besogo-board') || container.querySelector('.besogo-container') || container.querySelector('.svg-board');
+            if (hasBoard) {
+                console.log("autoInit produced board elements; OK.");
+                return;
+            }
+            try {
+                while (container.firstChild) container.removeChild(container.firstChild);
+                window.besogo.create(container, {
+                    sgf: sgfAbs,
+                    readOnly: false,
+                    panels: 'control+names+comment+tool+tree+file',
+                    tool: 'auto',
+                    theme: 'wood',
+                    realstones: true,
+                    coord: 'western'
+                });
+                console.log("Fallback explicit create called for classic viewer.");
+            } catch (e) {
+                console.error("Fallback explicit create failed:", e);
+            }
+        }
+
+        (function () {
+            tryLoadBundleAndInit().catch(e => {
+                console.error("Fatal error loading BesoGo bundle:", e);
+            });
+        })();
+    </script>
+
+    <script>
+        /* ---------- Translations (TSV) ---------- */
+        const FALLBACK_TRANSLATIONS = {
+            fr: {
+                sgf_title_prefix: "Partie commentée dans la vidéo",
+                sgf_youtube_link: "Lien Youtube",
+                sgf_file_link: "Fichier SGF",
+                sgf_file_link_katago: "Fichier SGF (KataGo)",
+                donate: "Me soutenir financièrement",
+                home_page: "Page d'accueil"
+            },
+            en: {
+                sgf_title_prefix: "Commented game in the video",
+                sgf_youtube_link: "YouTube link",
+                sgf_file_link: "Download SGF",
+                sgf_file_link_katago: "Download SGF (KataGo)",
+                donate: "Support me financially",
+                home_page: "Home page"
+            }
+        };
+        let TRANSLATIONS = {};
+        let AVAILABLE_LANGS = [];
+        let LANG_KEY_MAP = {};
+
+        function normalizeLangKey(key) {
+            return String(key || '')
+                .trim()
+                .toLowerCase()
+                .replace(/_/g, '-');
+        }
+
+        function rebuildLanguageMaps() {
+            AVAILABLE_LANGS = Object.keys(TRANSLATIONS || {});
+            LANG_KEY_MAP = {};
+            for (const original of AVAILABLE_LANGS) {
+                const norm = normalizeLangKey(original);
+                if (!norm) continue;
+                if (!Object.prototype.hasOwnProperty.call(LANG_KEY_MAP, norm)) {
+                    LANG_KEY_MAP[norm] = original;
+                }
+            }
+        }
+
+        async function loadTranslationsTSV() {
+            try {
+                const res = await fetch('../translation.tsv', { cache: "no-cache" });
+                if (!res.ok) throw new Error('translation.tsv not found');
+                const text = await res.text();
+                const parsed = parseTSV(text);
+                if (parsed && Object.keys(parsed).length > 0) {
+                    TRANSLATIONS = parsed;
+                    rebuildLanguageMaps();
+                    return;
+                }
+            } catch (err) {
+                console.warn('Impossible de charger translation.tsv :', err);
+            }
+            TRANSLATIONS = FALLBACK_TRANSLATIONS;
+            rebuildLanguageMaps();
+        }
+
+        function parseTSV(text) {
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length === 0) return null;
+            const headers = lines[0].split('\t').map(h => h.trim());
+            const out = {};
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split('\t');
+                const lang = (cols[0] || '').trim(); if (!lang) continue;
+                const obj = {};
+                for (let j = 1; j < headers.length; j++) {
+                    obj[headers[j].trim()] = (cols[j] || '').trim();
+                }
+                out[lang] = obj;
+            }
+            return out;
+        }
+
+        function matchAvailableLanguage(code) {
+            const normalized = normalizeLangKey(code);
+            if (!normalized) return null;
+            const parts = normalized.split('-');
+            while (parts.length >= 1) {
+                const candidate = parts.join('-');
+                if (Object.prototype.hasOwnProperty.call(LANG_KEY_MAP, candidate)) {
+                    return LANG_KEY_MAP[candidate];
+                }
+                parts.pop();
+            }
+            return null;
+        }
+
+        function detectLangFromAvailable() {
+            const candidates = [];
+            if (Array.isArray(navigator.languages)) {
+                for (const entry of navigator.languages) {
+                    if (entry) candidates.push(entry);
+                }
+            }
+            if (navigator.language) candidates.push(navigator.language);
+            if (navigator.userLanguage) candidates.push(navigator.userLanguage);
+
+            for (const candidate of candidates) {
+                const match = matchAvailableLanguage(candidate);
+                if (match) return match;
+            }
+
+            const fallbackOrder = ['fr', 'en'];
+            for (const fb of fallbackOrder) {
+                const found = matchAvailableLanguage(fb);
+                if (found) return found;
+            }
+
+            return AVAILABLE_LANGS[0] || 'fr';
+        }
+
+        function resolveVideoTitle(preferredLang) {
+            function lookupTitleByNormalizedKey(normKey) {
+                if (!normKey) return '';
+                for (const [k, v] of Object.entries(VIDEO_TITLE || {})) {
+                    if (normalizeLangKey(k) === normKey) return v;
+                }
+                return '';
+            }
+            const candidates = [];
+            const normalized = normalizeLangKey(preferredLang);
+            if (normalized) {
+                const parts = normalized.split('-');
+                while (parts.length >= 1) {
+                    const candidate = parts.join('-');
+                    if (!candidates.includes(candidate)) {
+                        candidates.push(candidate);
+                    }
+                    parts.pop();
+                }
+            }
+
+            for (const fallback of ['fr', 'en']) {
+                if (!candidates.includes(fallback)) {
+                    candidates.push(fallback);
+                }
+            }
+
+            for (const candidate of candidates) {
+                const rawTitle = lookupTitleByNormalizedKey(candidate);
+                if (!rawTitle || isPlaceholderString(rawTitle)) continue;
+                const trimmed = String(rawTitle).trim();
+                if (trimmed) return trimmed;
+            }
+
+            if (NAME && !isPlaceholderString(NAME)) {
+                const fallback = String(NAME).trim();
+                if (fallback) return fallback;
+            }
+
+            return '';
+        }
+
+        function resolveGDriveVideoMatch(preferredLang) {
+            const normalized = {};
+            const normalizedToOriginal = {};
+            for (const [lang, rawUrl] of Object.entries(GDRIVE_VIDEO_URLS)) {
+                if (!lang) continue;
+                const key = lang.toLowerCase().replace(/_/g, '-');
+                const value = typeof rawUrl === 'string'
+                    ? rawUrl.trim()
+                    : (rawUrl == null ? '' : String(rawUrl).trim());
+                normalized[key] = isPlaceholderString(value) ? '' : value;
+                if (!normalizedToOriginal[key]) {
+                    normalizedToOriginal[key] = lang;
+                }
+            }
+
+            const searchOrder = [];
+            const seenVariants = new Set();
+            const posterCandidates = [];
+
+            function registerPosterCandidate(code) {
+                const normalizedCode = String(code || '').trim();
+                if (!normalizedCode) return;
+                if (!posterCandidates.includes(normalizedCode)) {
+                    posterCandidates.push(normalizedCode);
+                }
+            }
+
+            function pushLangVariants(code) {
+                const clean = String(code || '').trim();
+                if (!clean) return;
+                const parts = clean.toLowerCase().replace(/_/g, '-').split('-');
+                for (let i = parts.length; i >= 1; i--) {
+                    const variant = parts.slice(0, i).join('-');
+                    if (!seenVariants.has(variant)) {
+                        seenVariants.add(variant);
+                        searchOrder.push(variant);
+                        registerPosterCandidate(normalizedToOriginal[variant] || variant);
+                    }
+                }
+            }
+
+            pushLangVariants(preferredLang);
+            if (Array.isArray(navigator.languages) && navigator.languages.length > 0) {
+                pushLangVariants(navigator.languages[0]);
+            }
+            pushLangVariants(navigator.language);
+
+            const tried = new Set();
+            let matchedNormalizedKey = '';
+            let matchedOriginalKey = '';
+            let url = '';
+
+            for (const code of searchOrder) {
+                if (tried.has(code)) continue;
+                tried.add(code);
+                const candidateUrl = normalized[code];
+                if (typeof candidateUrl === 'string' && candidateUrl.length > 0) {
+                    url = candidateUrl;
+                    matchedNormalizedKey = code;
+                    matchedOriginalKey = normalizedToOriginal[code] || code;
+                    break;
+                }
+            }
+
+            const posterSet = new Set();
+            const orderedPosterCandidates = [];
+            if (matchedOriginalKey) registerPosterCandidate(matchedOriginalKey);
+            for (const candidate of posterCandidates) {
+                const clean = String(candidate || '').trim();
+                if (!clean) continue;
+                if (posterSet.has(clean)) continue;
+                posterSet.add(clean);
+                orderedPosterCandidates.push(clean);
+            }
+
+            return {
+                url,
+                matchedNormalizedKey,
+                matchedOriginalKey,
+                posterCandidates: orderedPosterCandidates
+            };
+        }
+
+        function resolveGDriveVideoUrl(preferredLang) {
+            return resolveGDriveVideoMatch(preferredLang).url;
+        }
+
+        function normalizeGDriveEmbedUrl(rawUrl) {
+            const trimmed = (rawUrl || '').trim();
+            if (!trimmed) return '';
+
+            const previewPattern = /^https:\/\/drive\.google\.com\/file\/d\/[^/]+\/preview(\?.*)?$/i;
+            if (previewPattern.test(trimmed)) return trimmed;
+
+            let url;
+            try {
+                url = new URL(trimmed, window.location.href);
+            } catch (err) {
+                return trimmed;
+            }
+
+            const host = url.hostname.toLowerCase();
+            if (!host.includes('drive.google.com')) return trimmed;
+
+            let fileId = '';
+
+            const pathParts = url.pathname.split('/').filter(Boolean);
+            const dIndex = pathParts.indexOf('d');
+            if (dIndex !== -1 && pathParts[dIndex + 1]) {
+                fileId = pathParts[dIndex + 1];
+            }
+
+            if (!fileId) {
+                fileId = url.searchParams.get('id') || '';
+            }
+
+            if (!fileId && (url.pathname === '/uc' || url.pathname === '/open')) {
+                fileId = url.searchParams.get('id') || '';
+            }
+
+            fileId = fileId.replace(/[^a-zA-Z0-9_-]/g, '');
+            if (!fileId) return trimmed;
+
+            return `https://drive.google.com/file/d/${fileId}/preview`;
+        }
+
+        function stripSgfExtension(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            const withoutExt = raw.replace(/\.sgf$/i, '');
+            const segments = withoutExt.split(/[\\/]/);
+            return segments[segments.length - 1] || '';
+        }
+
+        function buildPosterLangCandidates(lang, match) {
+            const seen = new Set();
+            const result = [];
+
+            function push(code) {
+                const clean = String(code || '').trim();
+                if (!clean || seen.has(clean)) return;
+                seen.add(clean);
+                result.push(clean);
+            }
+
+            function pushNormalizedVariants(code) {
+                const normalized = normalizeLangKey(code);
+                if (!normalized) return;
+                if (!seen.has(normalized)) {
+                    seen.add(normalized);
+                    result.push(normalized);
+                }
+                const parts = normalized.split('-');
+                for (let i = parts.length - 1; i >= 1; i--) {
+                    const partial = parts.slice(0, i).join('-');
+                    if (!seen.has(partial)) {
+                        seen.add(partial);
+                        result.push(partial);
+                    }
+                }
+            }
+
+            if (match && Array.isArray(match.posterCandidates)) {
+                for (const candidate of match.posterCandidates) {
+                    push(candidate);
+                    pushNormalizedVariants(candidate);
+                }
+            }
+
+            push(lang);
+            if (match) {
+                push(match.matchedOriginalKey);
+                push(match.matchedNormalizedKey);
+            }
+
+            pushNormalizedVariants(lang);
+            if (match) {
+                pushNormalizedVariants(match.matchedOriginalKey);
+                pushNormalizedVariants(match.matchedNormalizedKey);
+            }
+
+            return result;
+        }
+
+        function findPosterImage(baseName, langCodes) {
+            return new Promise(resolve => {
+                if (!baseName || !Array.isArray(langCodes) || langCodes.length === 0) {
+                    resolve('');
+                    return;
+                }
+
+                let index = 0;
+
+                function tryNext() {
+                    if (index >= langCodes.length) {
+                        resolve('');
+                        return;
+                    }
+
+                    const code = String(langCodes[index++] || '').trim();
+                    if (!code) {
+                        tryNext();
+                        return;
+                    }
+
+                    const fileName = `${baseName}_[${code}].jpg`;
+                    const img = new Image();
+                    const cleanup = () => {
+                        img.onload = null;
+                        img.onerror = null;
+                        img.onabort = null;
+                    };
+                    img.onload = () => {
+                        cleanup();
+                        resolve(fileName);
+                    };
+                    img.onerror = img.onabort = () => {
+                        cleanup();
+                        tryNext();
+                    };
+                    img.src = fileName;
+                }
+
+                tryNext();
+            });
+        }
+
+        async function configureDrivePoster(options) {
+            const { posterEl, iframeEl, videoUrl, lang, match } = options || {};
+
+            clearDrivePosterState(posterEl, iframeEl);
+
+            if (!iframeEl || !videoUrl) {
+                return false;
+            }
+
+            const baseName = stripSgfExtension(SGF_BASENAME);
+            const langCandidates = buildPosterLangCandidates(lang, match);
+
+            if (iframeEl.src !== videoUrl) {
+                iframeEl.src = videoUrl;
+            }
+
+            if (!posterEl || !baseName) {
+                return false;
+            }
+
+            posterEl.style.backgroundImage = '';
+            posterEl.setAttribute('aria-hidden', 'true');
+
+            const posterPath = await findPosterImage(baseName, langCandidates);
+
+            if (!posterPath) {
+                return false;
+            }
+
+            posterEl.style.backgroundImage = `url('${posterPath}')`;
+            posterEl.dataset.videoUrl = videoUrl;
+            posterEl.removeAttribute('hidden');
+            posterEl.setAttribute('aria-hidden', 'false');
+
+            if (!posterEl.dataset.boundDrivePoster) {
+                posterEl.addEventListener('click', onDrivePosterActivate);
+                posterEl.addEventListener('keydown', onDrivePosterKeydown);
+                posterEl.dataset.boundDrivePoster = '1';
+            }
+
+            iframeEl.dataset.posterReady = '1';
+            return true;
+        }
+
+        function clearDrivePosterState(posterEl, iframeEl) {
+            if (posterEl) {
+                posterEl.setAttribute('hidden', '');
+                posterEl.setAttribute('aria-hidden', 'true');
+                posterEl.style.backgroundImage = '';
+                delete posterEl.dataset.videoUrl;
+            }
+            if (iframeEl) {
+                delete iframeEl.dataset.posterReady;
+            }
+        }
+
+        function onDrivePosterActivate(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            const posterEl = (event && event.currentTarget) || document.getElementById('gdrive-poster');
+            const iframeEl = document.getElementById('gdrive-frame');
+            if (!posterEl || !iframeEl) return;
+
+            const previewUrl = posterEl.dataset.videoUrl;
+            if (previewUrl && iframeEl.src !== previewUrl) {
+                iframeEl.src = previewUrl;
+            }
+
+            posterEl.style.backgroundImage = '';
+            clearDrivePosterState(posterEl, iframeEl);
+
+            setTimeout(() => {
+                try {
+                    if (typeof iframeEl.focus === 'function') {
+                        iframeEl.focus({ preventScroll: true });
+                    }
+                } catch (err) {
+                    try {
+                        iframeEl.focus();
+                    } catch (ignore) {
+                        /* noop */
+                    }
+                }
+            }, 0);
+        }
+
+        function onDrivePosterKeydown(event) {
+            if (!event) return;
+            const key = event.key;
+            if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+                event.preventDefault();
+                onDrivePosterActivate(event);
+            }
+        }
+
+        /* ---------- Ko‑fi isolé dans un iframe ---------- */
+        function renderKoFiIsolated(labelText) {
+            const iframe = document.getElementById('kofi-iframe');
+            if (!iframe) return;
+
+            const color = '#a17137';
+            const id = 'L4L41LW819';
+            const safeLabel = labelText || 'Me soutenir financièrement';
+
+            const srcdoc = `
+<!doctype html><html><head><meta charset="utf-8"/> <meta name="viewport" content="width=device-width, initial-scale=1"/> <style>html,body{margin:0;padding:0;overflow:hidden;background:transparent}</style> </head><body> <script src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"><\/script> <script> (function(){ function draw(){ if (window.kofiwidget2 && typeof window.kofiwidget2.init === 'function') { window.kofiwidget2.init(${JSON.stringify(safeLabel)}, ${JSON.stringify(color)}, ${JSON.stringify(id)}); window.kofiwidget2.draw(); } else { setTimeout(draw, 200); } } draw(); })(); <\/script> </body></html>`;
+            iframe.srcdoc = srcdoc;
+
+            const fallback = document.getElementById('kofi-link');
+            if (fallback) {
+                // hide fallback after iframe had time to load the widget
+                setTimeout(() => { fallback.style.display = 'none'; }, 1200);
+            }
+        }
+
+        async function applyTranslationsAndLinks() {
+            await loadTranslationsTSV();
+
+            const lang = detectLangFromAvailable();
+            const t = TRANSLATIONS[lang] || TRANSLATIONS['fr'] || FALLBACK_TRANSLATIONS['fr'];
+
+            document.documentElement.lang = lang;
+
+            // Populate the two title lines:
+            const titlePrefixEl = document.getElementById('title-prefix');
+            const titleMainEl = document.getElementById('title-main');
+            const prefix = (t.sgf_title_prefix || t['sgf_title_prefix'] || 'Partie commentée dans la vidéo').trim();
+            if (titlePrefixEl) titlePrefixEl.textContent = prefix;
+            if (titleMainEl) {
+                const localizedTitle = resolveVideoTitle(lang);
+                if (localizedTitle) {
+                    titleMainEl.textContent = localizedTitle;
+                    titleMainEl.style.display = '';
+                } else {
+                    titleMainEl.textContent = '';
+                    titleMainEl.style.display = 'none';
+                }
+            }
+
+            // Youtube link
+            const linkYt = document.getElementById('link-youtube');
+            if (linkYt) {
+                linkYt.textContent = (t.sgf_youtube_link || t['sgf_youtube_link'] || 'Lien Youtube');
+                linkYt.href = YT_URL || "#";
+                if (YT_URL) {
+                    try {
+                        const u = new URL(YT_URL);
+                        let id = "";
+                        if (u.hostname === "youtu.be") id = u.pathname.slice(1);
+                        if (!id && u.searchParams.get('v')) id = u.searchParams.get('v');
+                        if (!id) {
+                            const m = String(YT_URL).match(/([\w-]{11})/);
+                            if (m) id = m[1];
+                        }
+                        if (id) document.getElementById('yt-frame').src = "https://www.youtube.com/embed/" + id + "?rel=0";
+                    } catch (e) {
+                        console.warn("YT parse error", e);
+                    }
+                }
+            }
+
+            // SGF link label (depends on IS_KATAGO) and download href remains same
+            const linkSgf = document.getElementById('link-sgf');
+            if (linkSgf) {
+                const keyKatago = 'sgf_file_link_katago';
+                const keyDefault = 'sgf_file_link';
+                let label = null;
+                if (IS_KATAGO && t[keyKatago]) {
+                    label = t[keyKatago];
+                } else if (t[keyDefault]) {
+                    label = t[keyDefault];
+                } else {
+                    label = (FALLBACK_TRANSLATIONS.fr && FALLBACK_TRANSLATIONS.fr.sgf_file_link) || 'Fichier SGF';
+                }
+                linkSgf.textContent = label;
+
+                // Point download link to SGF stored alongside this page
+                let basename = SGF_BASENAME || '';
+                if (basename && !basename.toLowerCase().endsWith('.sgf')) basename = basename + '.sgf';
+                const sanitized = (basename || '').replace(/^\/+/, '');
+                linkSgf.href = new URL(sanitized, window.location.href).href;
+                linkSgf.setAttribute('download', basename || '');
+            }
+
+            const driveWrapper = document.getElementById('gdrive-wrapper');
+            const driveFrame = document.getElementById('gdrive-frame');
+            const drivePoster = document.getElementById('gdrive-poster');
+            const driveTopText = document.getElementById('gdrive-text-top');
+            const driveBottomText = document.getElementById('gdrive-text-bottom');
+            const driveLine1 = document.getElementById('gdrive-line-1');
+            const driveLine2 = document.getElementById('gdrive-line-2');
+            const driveLine3 = document.getElementById('gdrive-line-3');
+            const driveLine4 = document.getElementById('gdrive-line-4');
+            if (driveWrapper && driveFrame) {
+                const driveMatch = resolveGDriveVideoMatch(lang);
+                const normalizedDriveUrl = normalizeGDriveEmbedUrl(driveMatch.url);
+                if (normalizedDriveUrl) {
+                    driveWrapper.hidden = false;
+                    driveWrapper.setAttribute('aria-hidden', 'false');
+                    if (drivePoster) {
+                        const playLabel = (t.play_video && String(t.play_video).trim()) ||
+                            (lang === 'fr' ? 'Lire la vidéo' : 'Play video');
+                        drivePoster.setAttribute('aria-label', playLabel);
+                    }
+
+                    const driveUrlText = (typeof DRIVE_URL === 'string' && !isPlaceholderString(DRIVE_URL))
+                        ? DRIVE_URL.trim()
+                        : '';
+                    const line1Text = (t.google_drive_01 || '').trim();
+                    const line2Prefix = (t.google_drive_02 || '').trim();
+                    const line3Text = (t.google_drive_03 || '').trim();
+                    const line4Text = (t.google_drive_04 || '').trim();
+
+                    const topLines = [
+                        { el: driveLine1, text: line1Text },
+                        { el: driveLine2, text: null },
+                        { el: driveLine3, text: line3Text }
+                    ];
+
+                    let topVisible = false;
+                    for (const line of topLines) {
+                        if (!line.el) continue;
+                        if (line.el === driveLine2) {
+                            const hasAny = Boolean(line2Prefix || driveUrlText);
+                            line.el.hidden = !hasAny;
+                            line.el.textContent = '';
+                            if (hasAny) {
+                                if (line2Prefix) {
+                                    line.el.append(document.createTextNode(line2Prefix + (driveUrlText ? ' : ' : '')));
+                                }
+                                if (driveUrlText) {
+                                    const a = document.createElement('a');
+                                    a.href = driveUrlText;
+                                    a.target = '_blank';
+                                    a.rel = 'noopener';
+                                    a.textContent = driveUrlText;
+                                    line.el.append(a);
+                                }
+                                topVisible = true;
+                            }
+                            continue;
+                        }
+                        const hasText = Boolean(line.text);
+                        line.el.textContent = line.text || '';
+                        line.el.hidden = !hasText;
+                        if (hasText) topVisible = true;
+                    }
+
+                    if (driveTopText) {
+                        driveTopText.hidden = !topVisible;
+                        driveTopText.setAttribute('aria-hidden', topVisible ? 'false' : 'true');
+                    }
+
+                    if (driveLine4) {
+                        const hasBottom = Boolean(line4Text);
+                        driveLine4.textContent = line4Text || '';
+                        driveLine4.hidden = !hasBottom;
+                        if (driveBottomText) {
+                            driveBottomText.hidden = !hasBottom;
+                            driveBottomText.setAttribute('aria-hidden', hasBottom ? 'false' : 'true');
+                        }
+                    } else if (driveBottomText) {
+                        driveBottomText.hidden = true;
+                        driveBottomText.setAttribute('aria-hidden', 'true');
+                    }
+
+                    await configureDrivePoster({
+                        posterEl: drivePoster,
+                        iframeEl: driveFrame,
+                        videoUrl: normalizedDriveUrl,
+                        lang,
+                        match: driveMatch
+                    });
+                } else {
+                    clearDrivePosterState(drivePoster, driveFrame);
+                    driveFrame.removeAttribute('src');
+                    driveWrapper.hidden = true;
+                    driveWrapper.setAttribute('aria-hidden', 'true');
+
+                    const linesToClear = [driveLine1, driveLine2, driveLine3, driveLine4];
+                    for (const line of linesToClear) {
+                        if (!line) continue;
+                        line.textContent = '';
+                        line.hidden = true;
+                    }
+                    if (driveTopText) {
+                        driveTopText.hidden = true;
+                        driveTopText.setAttribute('aria-hidden', 'true');
+                    }
+                    if (driveBottomText) {
+                        driveBottomText.hidden = true;
+                        driveBottomText.setAttribute('aria-hidden', 'true');
+                    }
+                }
+            }
+
+            // Home page button label (new)
+            const homeBtn = document.getElementById('home-page-btn');
+            if (homeBtn) {
+                const labelHome = (t.home_page || t['home_page'] || FALLBACK_TRANSLATIONS.fr.home_page || 'Accueil');
+                homeBtn.textContent = labelHome;
+                // link to root (or you can override with t.home_page_url if you add that)
+                homeBtn.href = 'https://19x19.win';
+            }
+
+            // Ko-fi
+            renderKoFiIsolated(t.donate || 'Me soutenir financièrement');
+
+            // Localized header logo image selection
+            const logo = document.getElementById('page-logo');
+            if (logo) {
+                const srcs = [
+                    `../ressources/logo_${lang}.svg`,
+                    `../ressources/logo.svg`,
+                    `../ressources/logo_${lang}.png`,
+                    `../ressources/logo.png`
+                ];
+                for (const s of srcs) {
+                    if (s) { logo.src = s; break; }
+                }
+            }
+
+            // footer logo (site-logo) keep as-is (no change of id)
+            const siteLogo = document.getElementById('site-logo');
+            if (siteLogo) {
+                const srcs2 = [
+                    `../ressources/logo.svg`,
+                    `../ressources/logo.png`
+                ];
+                for (const s of srcs2) {
+                    if (s) { siteLogo.src = s; break; }
+                }
+            }
+        }
+
+        (function init() {
+            applyTranslationsAndLinks().catch(e => console.error("Translations error", e));
+        })();
+    </script>
+</body>
+</html>
+
